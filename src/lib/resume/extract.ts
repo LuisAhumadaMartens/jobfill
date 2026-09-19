@@ -66,6 +66,14 @@ const SCHOOL_WORDS = /\b(university|college|institute|academy|school|polytechnic
 const PRESENT = /\b(present|current|now|ongoing)\b/i;
 const BULLET = /^[\u2022\-*\u00b7\u25aa]/;
 
+const WORK_STATUS: Array<[RegExp, string, boolean, boolean]> = [
+  [/\bu\.?\s?s\.?\s+citizen\b|\bunited states citizen\b|\bus citizenship\b/i, 'U.S. Citizen', true, false],
+  [/\bpermanent resident\b|\bgreen card\b/i, 'U.S. Permanent Resident', true, false],
+  [/\bauthorized to work\b|\bwork authorization\b(?!.*\brequire)/i, 'Authorized to work in the U.S.', true, false],
+  [/\bh-?1b\b|\brequires? (visa )?sponsorship\b|\bneeds? sponsorship\b/i, 'Requires visa sponsorship', true, true],
+  [/\bopt\b|\bcpt\b|\bf-?1\b/i, 'F-1 student visa', true, true]
+];
+
 const US_MENTION = /\b(united states|u\.?s\.?a?\.?|american citizen|u\.?s\.? (citizen|permanent resident))\b/i;
 
 const NAME_STOPWORDS = /\b(resume|curriculum|vitae|cv|phone|email|address|portfolio|linkedin|github|profile|summary)\b/i;
@@ -356,6 +364,9 @@ function extract(text: string): ExtractResult {
   const state = locationMatch ? locationMatch[2] : '';
   const postal = firstMatch(locationLine, RX.postal);
 
+  const statusLine = (sections.header || []).join(' ') + ' ' + (sections.summary || []).join(' ');
+  const status = WORK_STATUS.find(([pattern]) => pattern.test(statusLine));
+
   const country = (state && isUSState(state)) || phone.startsWith('+1') || US_MENTION.test(headerText)
     ? 'United States'
     : '';
@@ -400,7 +411,8 @@ function extract(text: string): ExtractResult {
     degree: newestEducation ? newestEducation.degree : '',
     major: newestEducation ? newestEducation.major : '',
     graduationDate: newestEducation && newestEducation.graduation ? formatMonthYear(newestEducation.graduation) : '',
-    gpa: newestEducation ? newestEducation.gpa : ''
+    gpa: newestEducation ? newestEducation.gpa : '',
+    workStatus: status ? status[1] : ''
   };
 
   for (const key of Object.keys(profile)) if (!profile[key]) delete profile[key];

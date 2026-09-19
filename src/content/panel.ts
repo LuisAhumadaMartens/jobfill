@@ -287,9 +287,13 @@ export class Panel {
   }
 
   private visiblePlans(): FieldPlan[] {
-    if (this.tab === 'all') return this.plans;
-    if (this.tab === 'done') return this.plans.filter((p) => p.status === 'filled');
-    return this.plans.filter((p) => p.status === 'suggest' || p.status === 'unknown' || p.status === 'failed' || p.status === 'ready');
+    const chosen = this.tab === 'all'
+      ? this.plans
+      : this.tab === 'done'
+        ? this.plans.filter((p) => p.status === 'filled')
+        : this.plans.filter((p) => p.status === 'suggest' || p.status === 'unknown' || p.status === 'failed' || p.status === 'ready');
+
+    return [...chosen].sort((a, b) => Number(b.field.required) - Number(a.field.required));
   }
 
   private render(): void {

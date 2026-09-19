@@ -252,6 +252,23 @@ async function pickFromList(
   return { picked: null, signature: lastSignature };
 }
 
+async function fillChips(field: ScannedField, values: string[], answer?: Answer): Promise<FillOutcome> {
+  const accepted: string[] = [];
+
+  for (const value of values) {
+    const outcome = await fillCombobox(field, value, answer);
+    if (outcome.ok && outcome.applied) accepted.push(outcome.applied);
+    await wait(120);
+  }
+
+  if (!accepted.length) return { ok: false, reason: `None of those could be added` };
+  return {
+    ok: true,
+    applied: accepted.join(', '),
+    reason: accepted.length < values.length ? `Added ${accepted.length} of ${values.length}` : undefined
+  };
+}
+
 async function fillCombobox(field: ScannedField, value: string, answer?: Answer): Promise<FillOutcome> {
   const el = field.el as HTMLInputElement;
   const wanted = (text: string): boolean => {
@@ -381,9 +398,14 @@ export async function fillField(
     case 'checkbox':
       outcome = fillCheckbox(field, value, answer);
       break;
-    case 'combobox':
-      outcome = await fillCombobox(field, value, answer);
+    case 'combobox': {
+      const multiple = answer?.type === 'multichoice' || field.kind === 'skills';
+      const parts = value.split(/\s*,\s*/).filter(Boolean);
+      outcome = multiple && parts.length > 1
+        ? await fillChips(field, parts, answer)
+        : await fillCombobox(field, value, answer);
       break;
+    }
     case 'contenteditable':
       fillContentEditable(field.el, value);
       outcome = { ok: true, applied: value };

@@ -5,7 +5,7 @@ import { classify } from '../matching/matcher.ts';
 import { parsePhone } from '../values/phone.ts';
 import type { Answer, EducationEntry, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
 
-const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills'];
+const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills', 'skillYears', 'references', 'languages', 'certifications'];
 
 interface Area {
   get(keys?: string[] | null): Promise<Record<string, unknown>>;
@@ -105,6 +105,10 @@ async function load(): Promise<State> {
   state.history = Array.isArray(state.history) ? state.history : [];
   state.education = Array.isArray(state.education) ? state.education : [];
   state.skills = Array.isArray(state.skills) ? state.skills : [];
+  state.skillYears = Array.isArray(state.skillYears) ? state.skillYears : [];
+  state.references = Array.isArray(state.references) ? state.references : [];
+  state.languages = Array.isArray(state.languages) ? state.languages : [];
+  state.certifications = Array.isArray(state.certifications) ? state.certifications : [];
   state.stats = Object.assign({ filled: 0, learned: 0, applications: 0 }, state.stats || {});
 
   if (!Array.isArray(state.answers) || !raw || raw.answers === undefined) {
@@ -212,6 +216,27 @@ async function recordUse(answerIds: string | string[]): Promise<void> {
   await patch({ answers, stats: Object.assign(state.stats, { filled: state.stats.filled + ids.size }) });
 }
 
+function deriveFromProfile(answers: Answer[], profile: Profile): void {
+  const fill = (kind: string, value: string): void => {
+    if (!value) return;
+    const answer = answers.find((candidate) => candidate.kind === kind);
+    if (!answer || answer.value) return;
+    answer.value = value;
+    answer.updatedAt = nowISO();
+  };
+
+  if (profile.country && isUnitedStates(profile.country)) fill('locatedInUS', 'Yes');
+
+  const status = profile.workStatus ?? '';
+  if (status) {
+    const authorised = /citizen|permanent resident|green card|authorized/i.test(status);
+    const sponsored = /sponsorship|h-?1b|f-?1\b|opt\b|cpt\b/i.test(status);
+    if (authorised) fill('workAuthorization', 'Yes');
+    if (sponsored) fill('sponsorship', 'Yes');
+    else if (authorised) fill('sponsorship', 'No');
+  }
+}
+
 async function setProfile(update: Profile): Promise<{ profile: Profile; answers: Answer[] }> {
   const state = await load();
   const profile = Object.assign({}, state.profile, update);
@@ -241,11 +266,7 @@ async function setProfile(update: Profile): Promise<{ profile: Profile; answers:
     }
   }
 
-  const located = answers.find((answer) => answer.kind === 'locatedInUS');
-  if (located && !located.value && profile.country && isUnitedStates(profile.country)) {
-    located.value = 'Yes';
-    located.updatedAt = nowISO();
-  }
+  deriveFromProfile(answers, profile);
 
   await patch({ profile, answers });
   return { profile, answers };
@@ -320,6 +341,10 @@ async function setHistory(history: WorkEntry[]): Promise<WorkEntry[]> {
 async function setEducation(education: EducationEntry[]): Promise<EducationEntry[]> {
   await patch({ education });
   return education;
+}
+
+async function setRecords(update: Partial<Pick<State, 'references' | 'languages' | 'certifications' | 'skillYears'>>): Promise<void> {
+  await patch(update);
 }
 
 async function setSkills(skills: string[]): Promise<string[]> {
@@ -402,6 +427,6 @@ async function setHostDisabled(host: string, disabled: boolean): Promise<Setting
 export {
   KEYS, uid, makeAnswer, seedAnswers, load, patch, getAnswers, getSettings, setSettings,
   upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile, setResume,
-  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills,
+  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills, setRecords,
   exportAll, importAll, clearAll, isHostDisabled, setHostDisabled
 };

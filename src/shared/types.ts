@@ -70,6 +70,31 @@ export interface WorkEntry {
   summary: string;
 }
 
+export interface ReferenceEntry {
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  relationship: string;
+}
+
+export interface LanguageEntry {
+  language: string;
+  proficiency: string;
+}
+
+export interface CertificationEntry {
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+export interface SkillEntry {
+  name: string;
+  years: string;
+}
+
 export interface EducationEntry {
   school: string;
   degree: string;
@@ -92,6 +117,10 @@ export interface State {
   history: WorkEntry[];
   education: EducationEntry[];
   skills: string[];
+  skillYears: SkillEntry[];
+  references: ReferenceEntry[];
+  languages: LanguageEntry[];
+  certifications: CertificationEntry[];
 }
 
 export interface FieldOption {

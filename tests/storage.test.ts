@@ -143,3 +143,35 @@ describe('repairing data written by an older build', () => {
     expect(second.answers).toEqual(first.answers);
   });
 });
+
+describe('nothing about status is assumed', () => {
+  test('a fresh install has no work authorization answer', async () => {
+    const answers = await storage.getAnswers();
+    const auth = answers.find((answer) => answer.kind === 'workAuthorization');
+    const sponsorship = answers.find((answer) => answer.kind === 'sponsorship');
+
+    expect(auth?.value).toBe('');
+    expect(sponsorship?.value).toBe('');
+  });
+
+  test('a resume that states the status settles both questions', async () => {
+    await storage.setProfile({ workStatus: 'U.S. Permanent Resident' });
+    const answers = await storage.getAnswers();
+
+    expect(answers.find((answer) => answer.kind === 'workAuthorization')?.value).toBe('Yes');
+    expect(answers.find((answer) => answer.kind === 'sponsorship')?.value).toBe('No');
+  });
+
+  test('a status that needs sponsorship says so', async () => {
+    await storage.setProfile({ workStatus: 'Requires H-1B sponsorship' });
+    expect((await storage.getAnswers()).find((answer) => answer.kind === 'sponsorship')?.value).toBe('Yes');
+  });
+
+  test('the profile never overwrites an answer the user gave', async () => {
+    const seeded = (await storage.getAnswers()).find((answer) => answer.kind === 'workAuthorization')!;
+    await storage.upsertAnswer({ id: seeded.id, value: 'No' });
+    await storage.setProfile({ workStatus: 'U.S. Citizen' });
+
+    expect((await storage.getAnswers()).find((answer) => answer.kind === 'workAuthorization')?.value).toBe('No');
+  });
+});

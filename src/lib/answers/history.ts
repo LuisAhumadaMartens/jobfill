@@ -1,4 +1,4 @@
-import type { EducationEntry, ScannedField, SerializedField, WorkEntry } from '../../shared/types.ts';
+import type { CertificationEntry, EducationEntry, LanguageEntry, ReferenceEntry, ScannedField, SerializedField, State, WorkEntry } from '../../shared/types.ts';
 
 export const HISTORY_KINDS = [
   'employerName', 'jobTitle', 'currentEmployer', 'currentTitle', 'employmentStart', 'employmentEnd'
@@ -53,6 +53,95 @@ export function valueFromEducation(field: FieldLike, education: EducationEntry[]
   if (kind === 'gpa') return entry.gpa || null;
   if (kind === 'graduationDate') return entry.end || null;
   return null;
+}
+
+const REFERENCE_FIELDS: Record<string, keyof ReferenceEntry> = {
+  referenceName: 'name',
+  referenceEmail: 'email',
+  referencePhone: 'phone',
+  referenceCompany: 'company',
+  referenceTitle: 'title',
+  referenceRelationship: 'relationship'
+};
+
+export function valueFromReferences(field: FieldLike, references: ReferenceEntry[]): string | null {
+  const key = field.kind ? REFERENCE_FIELDS[field.kind] : undefined;
+  if (!key || !references.length) return null;
+  const entry = references[historyIndexOf(field)];
+  return entry ? entry[key] || null : null;
+}
+
+export function valueFromLanguages(field: FieldLike, languages: LanguageEntry[]): string | null {
+  if (!languages.length) return null;
+  const entry = languages[historyIndexOf(field)];
+  if (!entry) return null;
+  if (field.kind === 'language') return entry.language || null;
+  if (field.kind === 'languageProficiency') return entry.proficiency || null;
+  return null;
+}
+
+export function valueFromCertifications(field: FieldLike, certifications: CertificationEntry[]): string | null {
+  if (field.kind !== 'certificationName' || !certifications.length) return null;
+  const entry = certifications[historyIndexOf(field)];
+  return entry ? entry.name || null : null;
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+function partOf(value: string, want: 'month' | 'year'): string | null {
+  const match = /^(\d{1,2})[/-](\d{4})$/.exec(value);
+  if (match) {
+    if (want === 'year') return match[2]!;
+    const index = Number(match[1]) - 1;
+    return MONTH_NAMES[index] ?? String(Number(match[1]));
+  }
+  if (/^(19|20)\d{2}$/.test(value)) return want === 'year' ? value : null;
+  return null;
+}
+
+export function datePartFor(field: FieldLike, value: string): string | null {
+  const haystack = `${field.label ?? ''} ${field.name ?? ''} ${field.id ?? ''}`.toLowerCase();
+  if (/\bmonth\b/.test(haystack)) return partOf(value, 'month');
+  if (/\byear\b/.test(haystack)) return partOf(value, 'year');
+  return null;
+}
+
+export function valueFromRecords(field: FieldLike, state: Pick<State,
+  'history' | 'education' | 'skills' | 'references' | 'languages' | 'certifications'> & { skillYears?: Array<{ name: string; years: string }> }): string | null {
+  const direct = valueFromHistory(field, state.history)
+    ?? valueFromEducation(field, state.education)
+    ?? valueFromReferences(field, state.references)
+    ?? valueFromLanguages(field, state.languages)
+    ?? valueFromCertifications(field, state.certifications);
+
+  if (direct) {
+    const part = datePartFor(field, direct);
+    return part ?? direct;
+  }
+
+  if (field.kind === 'currentlyWorkHere') {
+    const entry = state.history[historyIndexOf(field)];
+    return entry ? (entry.current ? 'Yes' : 'No') : null;
+  }
+
+  if (field.kind === 'yearsExperience') {
+    const named = yearsForNamedSkill(field, state.skillYears ?? []);
+    if (named) return named;
+  }
+
+  if (field.kind === 'skills' && state.skills.length) return state.skills.join(', ');
+  return null;
+}
+
+function yearsForNamedSkill(field: FieldLike, skillYears: Array<{ name: string; years: string }>): string | null {
+  const haystack = ` ${(field.label ?? '').toLowerCase()} ${(field.name ?? '').toLowerCase()} `;
+  const matches = skillYears
+    .filter((entry) => entry.years && entry.name)
+    .filter((entry) => haystack.includes(` ${entry.name.toLowerCase()} `) || haystack.includes(entry.name.toLowerCase()));
+
+  const longest = matches.sort((a, b) => b.name.length - a.name.length)[0];
+  return longest?.years ?? null;
 }
 
 export function toEducationEntries(entries: Array<{

@@ -99,6 +99,7 @@ async function applyParsed(): Promise<void> {
   renderHistory();
   renderEducation();
   renderSkills();
+  renderAllRecords();
   renderAnswers();
   flash('Profile updated');
   showTab('profile');
@@ -162,6 +163,102 @@ function renderHistory(): void {
           </div>
         </article>`).join('')
     : '<p class="empty">No work history yet. Import a resume on the Resume tab.</p>';
+}
+
+interface RecordShape<T> {
+  id: string;
+  fields: Array<{ key: keyof T & string; label: string }>;
+  blank: () => T;
+  read: () => T[];
+  save: (entries: T[]) => Promise<unknown>;
+}
+
+function renderRecords<T extends Record<string, string>>(shape: RecordShape<T>): void {
+  const entries = shape.read();
+
+  const rows = entries.map((entry, index) => `
+    <div class="record" data-index="${index}">
+      <div class="row">
+        ${shape.fields.map((field) => `
+          <input type="text" data-key="${field.key}" placeholder="${escapeHtml(field.label)}"
+                 value="${escapeHtml(entry[field.key] ?? '')}" aria-label="${escapeHtml(field.label)}" />`).join('')}
+      </div>
+      <div class="drop-row"><button data-drop="${index}">Remove</button></div>
+    </div>`).join('');
+
+  $(shape.id).innerHTML = rows + `<button class="add" data-add="1">Add</button>`;
+}
+
+function wireRecords<T extends Record<string, string>>(shape: RecordShape<T>): void {
+  const container = $(shape.id);
+
+  const collect = (): T[] =>
+    [...container.querySelectorAll<HTMLElement>('.record')].map((row) => {
+      const entry = shape.blank();
+      for (const input of row.querySelectorAll<HTMLInputElement>('input[data-key]')) {
+        (entry as Record<string, string>)[input.dataset.key!] = input.value.trim();
+      }
+      return entry;
+    });
+
+  const persist = async (entries: T[]): Promise<void> => {
+    await shape.save(entries);
+    state = await storage.load();
+    renderRecords(shape);
+    flash();
+  };
+
+  container.addEventListener('change', () => void persist(collect()));
+
+  container.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.dataset.add) {
+      void persist([...collect(), shape.blank()]);
+      return;
+    }
+    const drop = target.dataset.drop;
+    if (drop !== undefined) {
+      void persist(collect().filter((_, index) => index !== Number(drop)));
+    }
+  });
+}
+
+const RECORD_SHAPES = () => [
+  {
+    id: 'references',
+    fields: [
+      { key: 'name', label: 'Name' }, { key: 'title', label: 'Title' }, { key: 'company', label: 'Company' },
+      { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'relationship', label: 'Relationship' }
+    ],
+    blank: () => ({ name: '', title: '', company: '', email: '', phone: '', relationship: '' }),
+    read: () => state.references ?? [],
+    save: (entries: never) => storage.setRecords({ references: entries })
+  },
+  {
+    id: 'languages',
+    fields: [{ key: 'language', label: 'Language' }, { key: 'proficiency', label: 'Proficiency' }],
+    blank: () => ({ language: '', proficiency: '' }),
+    read: () => state.languages ?? [],
+    save: (entries: never) => storage.setRecords({ languages: entries })
+  },
+  {
+    id: 'certifications',
+    fields: [{ key: 'name', label: 'Certification' }, { key: 'issuer', label: 'Issuer' }, { key: 'date', label: 'Year' }],
+    blank: () => ({ name: '', issuer: '', date: '' }),
+    read: () => state.certifications ?? [],
+    save: (entries: never) => storage.setRecords({ certifications: entries })
+  },
+  {
+    id: 'skillYears',
+    fields: [{ key: 'name', label: 'Skill' }, { key: 'years', label: 'Years' }],
+    blank: () => ({ name: '', years: '' }),
+    read: () => state.skillYears ?? [],
+    save: (entries: never) => storage.setRecords({ skillYears: entries })
+  }
+] as unknown as Array<RecordShape<Record<string, string>>>;
+
+function renderAllRecords(): void {
+  for (const shape of RECORD_SHAPES()) renderRecords(shape);
 }
 
 function renderEducation(): void {
@@ -436,6 +533,8 @@ async function boot(): Promise<void> {
   renderHistory();
   renderEducation();
   renderSkills();
+  renderAllRecords();
+  for (const shape of RECORD_SHAPES()) wireRecords(shape);
   renderAnswers();
   renderSettings();
 

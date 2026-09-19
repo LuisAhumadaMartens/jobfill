@@ -3,7 +3,8 @@ import * as matcher from '../lib/matching/matcher.ts';
 import * as T from '../lib/matching/text.ts';
 import * as places from '../lib/matching/places.ts';
 import { answerTypeFor as typeForField, buildReviewItems } from '../lib/answers/review.ts';
-import { valueFromEducation, valueFromHistory } from '../lib/answers/history.ts';
+import { valueFromRecords } from '../lib/answers/history.ts';
+import { fillTemplate, pageContextFrom } from '../lib/values/template.ts';
 import { verifyValue, verdictNote, verdictSummary } from '../lib/matching/verify.ts';
 import * as scanner from './scanner.ts';
 import * as filler from './filler.ts';
@@ -37,6 +38,8 @@ let dismissed = false;
 
 const attempted = new Map<string, { value: string; ok: boolean }>();
 let rescanTimer: ReturnType<typeof setTimeout> | null = null;
+
+const SALARY_KINDS = new Set(['compensation', 'salaryMin', 'salaryMax']);
 
 const BASED_HERE = /\b(based in|located in|live in|living in|reside in|residing in|currently in)\b/i;
 const WOULD_MOVE = /\b(relocat|move to|willing to move)\b/i;
@@ -100,9 +103,7 @@ function planFor(field: ScannedField, current: State): FieldPlan {
     score: c.score
   }));
 
-  const fromRecords = valueFromHistory(field, current.history)
-    ?? valueFromEducation(field, current.education)
-    ?? (field.kind === 'skills' && current.skills.length ? current.skills.join(', ') : null);
+  const fromRecords = valueFromRecords(field, current);
   if (fromRecords && !existing) {
     return { ...base, status: 'ready', value: fromRecords, reason: 'history' };
   }
@@ -117,6 +118,19 @@ function planFor(field: ScannedField, current: State): FieldPlan {
   }
 
   const { answer, score, reason } = result.match;
+
+  const wantsHourly = /\b(hourly|per hour|an hour|hourly rate)\b/i.test(field.label);
+  const looksAnnual = Number(String(answer.value).replace(/[^\d.]/g, '')) >= 1000;
+  if (wantsHourly && looksAnnual && SALARY_KINDS.has(answer.kind ?? '')) {
+    return {
+      ...base,
+      status: 'suggest',
+      answerId: answer.id,
+      value: answer.value,
+      note: 'This field asks for an hourly rate and the saved figure looks annual.'
+    };
+  }
+
   if (!answer.value) {
 
     if (derived) {
@@ -270,8 +284,9 @@ async function fillOne(uid: string, answerId?: string, value?: string): Promise<
 
   const answer = state.answers.find((a) => a.id === (answerId ?? plan.answerId));
   const text = value ?? answer?.value ?? '';
+  const written = fillTemplate(text, pageContextFrom(document.title, host));
   const isPhone = answer?.type === 'phone' || field.kind === 'phone' || field.type === 'tel';
-  const outcome = await filler.fillField(field, text, answer, isPhone
+  const outcome = await filler.fillField(field, written, answer, isPhone
     ? { countryField: countryControlFor(field), country: state.profile.country }
     : {});
   attempted.set(uid, { value: outcome.applied ?? text, ok: outcome.ok });
