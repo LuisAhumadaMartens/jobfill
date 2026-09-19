@@ -66,6 +66,18 @@ export interface WorkEntry {
   start: string;
   end: string;
   current: boolean;
+  skills: string[];
+  summary: string;
+}
+
+export interface EducationEntry {
+  school: string;
+  degree: string;
+  field: string;
+  start: string;
+  end: string;
+  gpa: string;
+  location: string;
 }
 
 export interface State {
@@ -78,6 +90,8 @@ export interface State {
 
   pendingReview: PendingReview | null;
   history: WorkEntry[];
+  education: EducationEntry[];
+  skills: string[];
 }
 
 export interface FieldOption {

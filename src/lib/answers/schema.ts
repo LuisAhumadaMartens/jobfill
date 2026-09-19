@@ -63,6 +63,16 @@ const KINDS: Kind[] = [
   { key: 'graduationDate', label: 'Graduation date', type: 'text', nameHints: ['graduation', 'gradyear', 'enddate'],
     patterns: [/\bgraduation\b/, /\bgraduated\b/, /\bend (date|year)\b/] },
   { key: 'gpa', label: 'GPA', type: 'text', nameHints: ['gpa'], patterns: [/\bgpa\b/, /\bgrade point\b/] },
+  { key: 'skills', label: 'Skills', type: 'multichoice', nameHints: ['skills', 'techstack', 'technologies'],
+    patterns: [/\bskills\b/, /\btechnologies\b/, /\btech stack\b/, /\bareas of expertise\b/],
+    exclude: [/soft skill/, /rate your/] },
+  { key: 'employmentStart', label: 'Employment start', type: 'text',
+    nameHints: ['experiencestart', 'employmentstart', 'jobstart', 'fromdate', 'datefrom'],
+    patterns: [/\b(employment|position|role) start\b/, /\bstart date of employment\b/, /\bdates? of employment\b/],
+    exclude: [/earliest/, /available/] },
+  { key: 'employmentEnd', label: 'Employment end', type: 'text',
+    nameHints: ['experienceend', 'employmentend', 'jobend', 'todate', 'dateto'],
+    patterns: [/\b(employment|position|role) end\b/, /\bend date of employment\b/] },
   { key: 'resumeFile', label: 'Resume file', type: 'file', nameHints: ['resume', 'cv'],
     patterns: [/\bresume\b/, /\battach.*resume\b/], exclude: [/cover/, /link/, /paste/] },
   { key: 'coverLetter', label: 'Cover letter', type: 'longtext', nameHints: ['coverletter', 'cover_letter'],
@@ -208,7 +218,9 @@ function defaultState(): State {
     resume: null,
     stats: { filled: 0, learned: 0, applications: 0 },
     pendingReview: null,
-    history: []
+    history: [],
+    education: [],
+    skills: []
   };
 }
 

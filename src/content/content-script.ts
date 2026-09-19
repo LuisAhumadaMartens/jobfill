@@ -3,7 +3,7 @@ import * as matcher from '../lib/matching/matcher.ts';
 import * as T from '../lib/matching/text.ts';
 import * as places from '../lib/matching/places.ts';
 import { answerTypeFor as typeForField, buildReviewItems } from '../lib/answers/review.ts';
-import { valueFromHistory } from '../lib/answers/history.ts';
+import { valueFromEducation, valueFromHistory } from '../lib/answers/history.ts';
 import { verifyValue, verdictNote, verdictSummary } from '../lib/matching/verify.ts';
 import * as scanner from './scanner.ts';
 import * as filler from './filler.ts';
@@ -100,9 +100,11 @@ function planFor(field: ScannedField, current: State): FieldPlan {
     score: c.score
   }));
 
-  const fromHistory = valueFromHistory(field, current.history);
-  if (fromHistory && !existing) {
-    return { ...base, status: 'ready', value: fromHistory, reason: 'history' };
+  const fromRecords = valueFromHistory(field, current.history)
+    ?? valueFromEducation(field, current.education)
+    ?? (field.kind === 'skills' && current.skills.length ? current.skills.join(', ') : null);
+  if (fromRecords && !existing) {
+    return { ...base, status: 'ready', value: fromRecords, reason: 'history' };
   }
 
   const derived = deriveFromLocation(field, current);

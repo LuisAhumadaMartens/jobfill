@@ -3,6 +3,7 @@ import * as matcher from '../lib/matching/matcher.ts';
 import { comboboxSelection } from './scanner.ts';
 import { expandPlace, isPlace } from '../lib/matching/places.ts';
 import { parsePhone, renderPhone } from '../lib/values/phone.ts';
+import { shapeValue } from '../lib/values/shape.ts';
 import type { Answer, ResumeRecord, ScannedField } from '../shared/types.ts';
 
 export interface FillContext {
@@ -391,10 +392,19 @@ export async function fillField(
       outcome = { ok: false, reason: 'Use attachFile for file inputs' };
       break;
     default: {
-      const trimmed = field.maxLength && value.length > field.maxLength ? value.slice(0, field.maxLength) : value;
+      const element = field.el as HTMLInputElement;
+      const shaped = shapeValue(value, {
+        type: field.type,
+        maxLength: field.maxLength,
+        placeholder: field.placeholder,
+        min: element.getAttribute?.('min'),
+        max: element.getAttribute?.('max'),
+        step: element.getAttribute?.('step')
+      });
+      const trimmed = field.maxLength && shaped.length > field.maxLength ? shaped.slice(0, field.maxLength) : shaped;
       typeInto(field.el, trimmed);
       outcome = { ok: true, applied: trimmed };
-      if (trimmed !== value) outcome.reason = `Trimmed to the field's ${field.maxLength} character limit`;
+      if (trimmed !== shaped) outcome.reason = `Trimmed to the field's ${field.maxLength} character limit`;
     }
   }
 

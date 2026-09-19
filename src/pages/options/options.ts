@@ -3,7 +3,7 @@ import * as schema from '../../lib/answers/schema.ts';
 import * as matcher from '../../lib/matching/matcher.ts';
 import { readResumeFile, readResumeText, type ParsedResume } from '../../lib/resume/reader.ts';
 import { ATS_HOSTS } from '../../lib/sites.ts';
-import { toWorkEntries } from '../../lib/answers/history.ts';
+import { toEducationEntries, toWorkEntries } from '../../lib/answers/history.ts';
 import type { Answer, State } from '../../shared/types.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -84,6 +84,8 @@ async function applyParsed(): Promise<void> {
   if (!parsed) return;
   await storage.setProfile(parsed.profile);
   await storage.setHistory(toWorkEntries(parsed.experience));
+  await storage.setEducation(toEducationEntries(parsed.education));
+  await storage.setSkills(parsed.skills);
   await storage.setResume({
     name: parsed.name,
     type: parsed.type,
@@ -95,6 +97,8 @@ async function applyParsed(): Promise<void> {
   state = await storage.load();
   renderProfile();
   renderHistory();
+  renderEducation();
+  renderSkills();
   renderAnswers();
   flash('Profile updated');
   showTab('profile');
@@ -152,11 +156,34 @@ function renderHistory(): void {
             ${escapeHtml(entry.company)}${entry.location ? ` &middot; ${escapeHtml(entry.location)}` : ''}
             ${entry.start ? ` &middot; ${escapeHtml(entry.start)} to ${entry.current ? 'now' : escapeHtml(entry.end || 'unknown')}` : ''}
           </div>
+          ${entry.skills.length ? `<div class="aliases" style="margin-top:9px">${entry.skills.map((skill) => `<span class="alias">${escapeHtml(skill)}</span>`).join('')}</div>` : ''}
           <div class="actions" style="margin-top:10px">
             <button class="danger" data-remove="${index}">Remove</button>
           </div>
         </article>`).join('')
     : '<p class="empty">No work history yet. Import a resume on the Resume tab.</p>';
+}
+
+function renderEducation(): void {
+  const entries = state.education ?? [];
+  $('education').innerHTML = entries.length
+    ? entries.map((entry, index) => `
+        <article class="answer" style="padding: 12px 15px">
+          <div class="q">${escapeHtml(entry.school || 'School')}</div>
+          <div class="v" style="max-width:none">
+            ${escapeHtml([entry.degree, entry.field].filter(Boolean).join(', '))}
+            ${entry.end ? ` &middot; ${escapeHtml(entry.end)}` : ''}
+            ${entry.gpa ? ` &middot; GPA ${escapeHtml(entry.gpa)}` : ''}
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="danger" data-remove-education="${index}">Remove</button>
+          </div>
+        </article>`).join('')
+    : '<p class="empty">No education yet. Import a resume on the Resume tab.</p>';
+}
+
+function renderSkills(): void {
+  $<HTMLTextAreaElement>('skills').value = (state.skills ?? []).join(', ');
 }
 
 function renderProfile(): void {
@@ -407,6 +434,8 @@ async function boot(): Promise<void> {
   wireResumeInput();
   renderProfile();
   renderHistory();
+  renderEducation();
+  renderSkills();
   renderAnswers();
   renderSettings();
 
@@ -416,6 +445,23 @@ async function boot(): Promise<void> {
   });
 
   $('save-profile').addEventListener('click', () => void saveProfile());
+
+  $('education').addEventListener('click', async (event) => {
+    const index = (event.target as HTMLElement).dataset.removeEducation;
+    if (index === undefined) return;
+    await storage.setEducation((state.education ?? []).filter((_, position) => position !== Number(index)));
+    state = await storage.load();
+    renderEducation();
+    flash('Removed');
+  });
+
+  $('save-skills').addEventListener('click', async () => {
+    const raw = $<HTMLTextAreaElement>('skills').value;
+    await storage.setSkills(raw.split(/[,\n]/));
+    state = await storage.load();
+    renderSkills();
+    flash('Skills saved');
+  });
 
   $('history').addEventListener('click', async (event) => {
     const index = (event.target as HTMLElement).dataset.remove;

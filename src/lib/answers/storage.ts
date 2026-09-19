@@ -3,9 +3,9 @@ import * as S from './schema.ts';
 import { isUnitedStates } from '../matching/synonyms.ts';
 import { classify } from '../matching/matcher.ts';
 import { parsePhone } from '../values/phone.ts';
-import type { Answer, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
+import type { Answer, EducationEntry, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
 
-const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history'];
+const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills'];
 
 interface Area {
   get(keys?: string[] | null): Promise<Record<string, unknown>>;
@@ -103,6 +103,8 @@ async function load(): Promise<State> {
   state.settings = Object.assign(S.defaultSettings(), state.settings || {});
   state.profile = state.profile || {};
   state.history = Array.isArray(state.history) ? state.history : [];
+  state.education = Array.isArray(state.education) ? state.education : [];
+  state.skills = Array.isArray(state.skills) ? state.skills : [];
   state.stats = Object.assign({ filled: 0, learned: 0, applications: 0 }, state.stats || {});
 
   if (!Array.isArray(state.answers) || !raw || raw.answers === undefined) {
@@ -315,6 +317,24 @@ async function setHistory(history: WorkEntry[]): Promise<WorkEntry[]> {
   return history;
 }
 
+async function setEducation(education: EducationEntry[]): Promise<EducationEntry[]> {
+  await patch({ education });
+  return education;
+}
+
+async function setSkills(skills: string[]): Promise<string[]> {
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const skill of skills.map((value) => T.squish(value)).filter(Boolean)) {
+    const key = T.normalize(skill);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(skill);
+  }
+  await patch({ skills: unique });
+  return unique;
+}
+
 async function setResume(resume: ResumeRecord | null): Promise<ResumeRecord | null> {
   await patch({ resume });
   return resume;
@@ -382,6 +402,6 @@ async function setHostDisabled(host: string, disabled: boolean): Promise<Setting
 export {
   KEYS, uid, makeAnswer, seedAnswers, load, patch, getAnswers, getSettings, setSettings,
   upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile, setResume,
-  setPendingReview, getPendingReview, applyReview, setHistory,
+  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills,
   exportAll, importAll, clearAll, isHostDisabled, setHostDisabled
 };

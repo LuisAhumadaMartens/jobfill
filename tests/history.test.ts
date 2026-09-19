@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { historyIndexOf, toWorkEntries, valueFromHistory } from '../src/lib/answers/history.ts';
+import { historyIndexOf, toEducationEntries, toWorkEntries, valueFromEducation, valueFromHistory } from '../src/lib/answers/history.ts';
 import { extract } from '../src/lib/resume/extract.ts';
 
 const history = toWorkEntries([
@@ -49,4 +49,47 @@ test('the resume reader fills the history, not just the current job', async () =
   expect(entries).toHaveLength(2);
   expect(entries[0]).toMatchObject({ company: 'Wavelength Data', current: true, start: '02/2021', end: '' });
   expect(entries[1]).toMatchObject({ company: 'Brightline Systems', current: false, end: '01/2021' });
+});
+
+describe('education, the same way', () => {
+  const education = toEducationEntries([
+    { school: 'University of Texas at Austin', degree: 'B.S.', major: 'Computer Engineering', gpa: '3.8', graduation: { year: 2018, month: 5 } },
+    { school: 'Austin Community College', degree: 'A.S.', major: 'Mathematics', gpa: '', graduation: { year: 2015 } }
+  ]);
+
+  test('each indexed block gets its own school', () => {
+    expect(valueFromEducation({ kind: 'school', name: 'education[0][school]' }, education)).toBe('University of Texas at Austin');
+    expect(valueFromEducation({ kind: 'school', name: 'education[1][school]' }, education)).toBe('Austin Community College');
+    expect(valueFromEducation({ kind: 'major', name: 'education[1][discipline]' }, education)).toBe('Mathematics');
+    expect(valueFromEducation({ kind: 'graduationDate', name: 'education[0][end]' }, education)).toBe('05/2018');
+  });
+
+  test('a school that is not there fills nothing', () => {
+    expect(valueFromEducation({ kind: 'school', name: 'education[4][school]' }, education)).toBeNull();
+    expect(valueFromEducation({ kind: 'gpa', name: 'education[1][gpa]' }, education)).toBeNull();
+  });
+});
+
+describe('what each job involved', () => {
+  test('skills named in a role are kept against that role', async () => {
+    const text = await Bun.file(new URL('./fixtures/resume.txt', import.meta.url)).text();
+    const parsed = extract(text);
+    const entries = toWorkEntries(parsed.experience);
+
+    expect(entries[0]!.skills).toContain('Kafka');
+    expect(entries[0]!.summary).toContain('Streaming analytics');
+
+    expect(entries[1]!.skills).toEqual([]);
+  });
+
+  test('employment dates come from the history too', () => {
+    const history = toWorkEntries([
+      { title: 'Senior Engineer', company: 'Acme', location: '', current: true, start: { year: 2021, month: 2 }, end: null },
+      { title: 'Engineer', company: 'Beta', location: '', current: false, start: { year: 2018, month: 7 }, end: { year: 2021, month: 1 } }
+    ]);
+
+    expect(valueFromHistory({ kind: 'employmentStart', name: 'experience[1][from]' }, history)).toBe('07/2018');
+    expect(valueFromHistory({ kind: 'employmentEnd', name: 'experience[1][to]' }, history)).toBe('01/2021');
+    expect(valueFromHistory({ kind: 'employmentEnd', name: 'experience[0][to]' }, history)).toBe('Present');
+  });
 });

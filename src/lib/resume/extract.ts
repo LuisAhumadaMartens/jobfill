@@ -10,6 +10,9 @@ export interface Role {
   end: ParsedDate | null;
   current: boolean;
   raw: string;
+  lines: string[];
+  skills: string[];
+  summary: string;
 }
 
 export interface EducationEntry {
@@ -61,6 +64,7 @@ const SECTION_ALIASES: Array<[string, string[]]> = [
 const DEGREE_WORDS = /\b(b\.?s\.?|b\.?a\.?|bachelor(?:'s)?|m\.?s\.?|m\.?a\.?|master(?:'s)?|mba|ph\.?d\.?|doctorate|associate(?:'s)?|a\.?a\.?s?\.?)\b/i;
 const SCHOOL_WORDS = /\b(university|college|institute|academy|school|polytechnic)\b/i;
 const PRESENT = /\b(present|current|now|ongoing)\b/i;
+const BULLET = /^[\u2022\-*\u00b7\u25aa]/;
 
 const US_MENTION = /\b(united states|u\.?s\.?a?\.?|american citizen|u\.?s\.? (citizen|permanent resident))\b/i;
 
@@ -209,17 +213,43 @@ function parseRoleLine(line: string): Role | null {
     start: dates && dates.start ? dates.start : null,
     end: dates ? dates.end : null,
     current: !!(dates && dates.end && dates.end.present),
-    raw: line
+    raw: line,
+    lines: [],
+    skills: [],
+    summary: ''
   };
 }
 
 function parseExperience(lines: string[] | undefined): Role[] {
   const roles: Role[] = [];
+  let current: Role | null = null;
+
   for (const line of lines || []) {
     const role = parseRoleLine(line);
-    if (role && role.start) roles.push(role);
+    if (role && role.start) {
+      current = role;
+      roles.push(current);
+      continue;
+    }
+    if (current) current.lines.push(line);
   }
+
+  for (const role of roles) {
+    role.summary = role.lines.find((line) => !BULLET.test(line)) ?? '';
+  }
+
   return roles;
+}
+
+function skillsMentionedIn(lines: string[], skills: string[]): string[] {
+  if (!lines.length || !skills.length) return [];
+  const flatten = (value: string): string => ' ' + value.toLowerCase().replace(/[^a-z0-9+#. ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const haystack = flatten(lines.join(' '));
+
+  return skills.filter((skill) => {
+    const needle = flatten(skill).trim();
+    return needle.length > 1 && haystack.includes(' ' + needle + ' ');
+  });
 }
 
 function parseEducation(lines: string[] | undefined): EducationEntry[] {
@@ -333,6 +363,7 @@ function extract(text: string): ExtractResult {
   const experience = parseExperience(sections.experience);
   const education = parseEducation(sections.education);
   const skills = parseSkills(sections.skills);
+  for (const role of experience) role.skills = skillsMentionedIn(role.lines, skills);
   const summary = (sections.summary || []).join(' ').trim();
 
   if (!experience.length && sections.experience) {

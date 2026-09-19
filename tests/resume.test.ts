@@ -77,8 +77,8 @@ test('names split into parts', () => {
 
 test('overlapping roles are not counted twice', () => {
   const years = totalYears([
-    { title: 'A', company: 'X', location: '', start: { year: 2020, month: 1 }, end: { year: 2024, month: 1 }, current: false, raw: '' },
-    { title: 'B', company: 'Y', location: '', start: { year: 2021, month: 1 }, end: { year: 2023, month: 1 }, current: false, raw: '' }
+    { title: 'A', company: 'X', location: '', start: { year: 2020, month: 1 }, end: { year: 2024, month: 1 }, current: false, raw: '', lines: [], skills: [], summary: '' },
+    { title: 'B', company: 'Y', location: '', start: { year: 2021, month: 1 }, end: { year: 2023, month: 1 }, current: false, raw: '', lines: [], skills: [], summary: '' }
   ]);
   expect(years).toBe(4);
 });
