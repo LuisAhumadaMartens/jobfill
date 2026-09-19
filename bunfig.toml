@@ -1,0 +1,3 @@
+[test]
+# Gives the scanner tests a DOM to walk.
+preload = ["./tests/setup.ts"]

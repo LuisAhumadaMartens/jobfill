@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>My Application</title>
+<style>
+ body{font:15px/1.6 -apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px}
+ .wd-field{margin-bottom:18px}
+ .wd-label{font-weight:600;font-size:13px;display:block;margin-bottom:5px}
+ input{width:100%;padding:8px 10px;border:1px solid #bbb;border-radius:4px;font:inherit}
+ .combo{position:relative}
+ .listbox{position:absolute;z-index:5;left:0;right:0;background:#fff;border:1px solid #bbb;border-radius:4px;margin-top:2px;max-height:180px;overflow:auto}
+ .listbox[hidden]{display:none}
+ .opt{padding:7px 10px;cursor:pointer}
+ .opt:hover{background:#eef}
+ h1{font-size:20px} h2{font-size:13px;text-transform:uppercase;color:#777;margin-top:30px}
+</style></head>
+<body>
+<h1>My Information</h1>
+<form onsubmit="event.preventDefault();alert('Fixture form, nothing submitted.')">
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-legal-first">Legal Name - First Name</div>
+    <input type="text" data-automation-id="legalNameSection_firstName" aria-labelledby="l-legal-first">
+  </div>
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-legal-last">Legal Name - Last Name</div>
+    <input type="text" data-automation-id="legalNameSection_lastName" aria-labelledby="l-legal-last">
+  </div>
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-email">Email Address</div>
+    <input type="text" data-automation-id="email" aria-labelledby="l-email">
+  </div>
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-phone">Phone Number</div>
+    <input type="text" data-automation-id="phone-number" aria-labelledby="l-phone">
+  </div>
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-addr">Address Line 1</div>
+    <input type="text" data-automation-id="addressSection_addressLine1" aria-labelledby="l-addr">
+  </div>
+
+  <div class="wd-field">
+    <div class="wd-label" id="l-city">City</div>
+    <input type="text" data-automation-id="addressSection_city" aria-labelledby="l-city">
+  </div>
+
+  <h2>Application questions</h2>
+
+  <div class="wd-field combo">
+    <div class="wd-label" id="l-country">Country / Region</div>
+    <input type="text" role="combobox" aria-expanded="false" aria-autocomplete="list"
+           aria-controls="country-list" aria-labelledby="l-country" data-automation-id="country">
+    <div class="listbox" id="country-list" role="listbox" hidden>
+      <div class="opt" role="option">Canada</div>
+      <div class="opt" role="option">Mexico</div>
+      <div class="opt" role="option">United States of America</div>
+      <div class="opt" role="option">United Kingdom</div>
+    </div>
+  </div>
+
+  <div class="wd-field combo">
+    <div class="wd-label" id="l-auth">Are you legally authorized to work in the United States?</div>
+    <input type="text" role="combobox" aria-expanded="false" aria-autocomplete="list"
+           aria-controls="auth-list" aria-labelledby="l-auth" data-automation-id="workAuth">
+    <div class="listbox" id="auth-list" role="listbox" hidden>
+      <div class="opt" role="option">Yes</div>
+      <div class="opt" role="option">No</div>
+    </div>
+  </div>
+
+  <div class="wd-field">
+    <label class="wd-label"><input type="checkbox" name="ack" style="width:auto"> I certify that the information provided is true</label>
+  </div>
+</form>
+
+<script>
+  // The bare minimum of combobox behaviour: open on input, fill on click.
+  for (const combo of document.querySelectorAll('[role="combobox"]')) {
+    const list = document.getElementById(combo.getAttribute('aria-controls'));
+    const open = (show) => { list.hidden = !show; combo.setAttribute('aria-expanded', String(show)); };
+
+    combo.addEventListener('input', () => open(true));
+    combo.addEventListener('focus', () => open(true));
+    combo.addEventListener('blur', () => setTimeout(() => open(false), 200));
+
+    list.addEventListener('mousedown', (event) => {
+      const option = event.target.closest('.opt');
+      if (!option) return;
+      combo.value = option.textContent.trim();
+      combo.dispatchEvent(new Event('change', { bubbles: true }));
+      open(false);
+    });
+  }
+</script>
+</body></html>

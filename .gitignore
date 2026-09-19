@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.zip
+.DS_Store
+bun.lockb
+.env
+assets/icons/

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Apply: Backend Engineer</title>
+<style>
+ body{font:15px/1.6 -apple-system,sans-serif;max-width:600px;margin:40px auto;padding:0 20px}
+ .application-field{margin-bottom:16px}
+ input,textarea{width:100%;padding:9px;border:1px solid #ddd;border-radius:4px;font:inherit}
+ fieldset{border:0;padding:0;margin:0 0 18px} legend{font-weight:600;font-size:14px;margin-bottom:6px}
+ .radio{display:block;font-weight:400;margin:3px 0}
+ .application-label{font-weight:600;font-size:13px;display:block;margin-bottom:5px}
+ button{background:#111;color:#fff;border:0;padding:11px 22px;border-radius:4px;font:inherit}
+</style></head>
+<body>
+<h1>Backend Engineer</h1>
+<form onsubmit="event.preventDefault();alert('Fixture form, nothing submitted.')">
+
+  <div class="application-field"><input type="text" name="name" placeholder="Full name*" required></div>
+  <div class="application-field"><input type="email" name="email" placeholder="Email*" required></div>
+  <div class="application-field"><input type="tel" name="phone" placeholder="Phone"></div>
+  <div class="application-field"><input type="text" name="org" placeholder="Current company"></div>
+  <div class="application-field"><input type="text" name="urls[LinkedIn]" placeholder="LinkedIn URL"></div>
+  <div class="application-field"><input type="text" name="urls[GitHub]" placeholder="GitHub URL"></div>
+  <div class="application-field"><input type="text" name="urls[Portfolio]" placeholder="Portfolio URL"></div>
+
+  <div class="application-field">
+    <span class="application-label">Additional information</span>
+    <textarea name="comments" rows="4" placeholder="Add a cover letter or anything else you want to share"></textarea>
+  </div>
+
+  <fieldset>
+    <legend>Are you legally authorized to work in the country of employment?</legend>
+    <label class="radio"><input type="radio" name="auth" value="yes"> Yes</label>
+    <label class="radio"><input type="radio" name="auth" value="no"> No</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Do you now or will you in the future require visa sponsorship?</legend>
+    <label class="radio"><input type="radio" name="visa" value="yes"> Yes</label>
+    <label class="radio"><input type="radio" name="visa" value="no"> No</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Are you willing to relocate?</legend>
+    <label class="radio"><input type="radio" name="reloc" value="yes"> Yes</label>
+    <label class="radio"><input type="radio" name="reloc" value="no"> No</label>
+    <label class="radio"><input type="radio" name="reloc" value="maybe"> Open to discussing</label>
+  </fieldset>
+
+  <div class="application-field">
+    <span class="application-label">How did you hear about this role?</span>
+    <input type="text" name="source">
+  </div>
+
+  <label class="radio"><input type="checkbox" name="terms"> I confirm the information above is accurate</label>
+  <p><button type="submit">Submit</button></p>
+</form>
+</body></html>

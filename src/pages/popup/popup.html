@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JobFill</title>
+    <link rel="stylesheet" href="../theme.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>JobFill</h1>
+        <p id="host">this page</p>
+      </div>
+    </header>
+
+    <section class="counts" id="counts" hidden>
+      <div><strong id="count-ready">0</strong><span>ready</span></div>
+      <div><strong id="count-review">0</strong><span>to review</span></div>
+      <div><strong id="count-filled">0</strong><span>filled</span></div>
+    </section>
+
+    <p class="status" id="status">Checking this page…</p>
+
+    <div class="buttons">
+      <button id="primary" class="primary">Run JobFill here</button>
+      <button id="panel" class="ghost" hidden>Panel</button>
+    </div>
+
+    <ul class="quick" id="quick"></ul>
+
+    <section class="site" id="site">
+      <label class="always">
+        <input type="checkbox" id="always" />
+        <span class="text">
+          <strong id="always-title">Always run on this site</strong>
+          <span id="always-note">Chrome will ask once. JobFill then starts here on its own.</span>
+        </span>
+      </label>
+    </section>
+
+    <footer>
+      <button id="options" class="link">Manage answers</button>
+      <button id="mute" class="link muted" hidden>Mute this site</button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

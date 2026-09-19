@@ -1,0 +1,192 @@
+import type { Answer, AnswerType, Kind, Settings, State } from '../../shared/types.ts';
+
+const STORAGE_VERSION = 1;
+
+const TYPES: AnswerType[] = ['text', 'longtext', 'choice', 'multichoice', 'boolean', 'number', 'date', 'email', 'phone', 'url', 'file'];
+
+const DECLINE = 'I decline to self-identify';
+
+const KINDS: Kind[] = [
+  { key: 'firstName', label: 'First name', type: 'text', auto: ['given-name'], nameHints: ['firstname', 'first_name', 'fname', 'givenname'],
+    patterns: [/^first name$/, /\bfirst name\b/, /\bgiven name\b/, /\bforename\b/], exclude: [/last/, /employer/, /university/] },
+  { key: 'middleName', label: 'Middle name', type: 'text', auto: ['additional-name'], nameHints: ['middlename', 'middle_name', 'mname'],
+    patterns: [/\bmiddle (name|initial)\b/] },
+  { key: 'lastName', label: 'Last name', type: 'text', auto: ['family-name'], nameHints: ['lastname', 'last_name', 'lname', 'surname', 'familyname'],
+    patterns: [/^last name$/, /\blast name\b/, /\bsurname\b/, /\bfamily name\b/], exclude: [/first/, /employer/] },
+  { key: 'preferredName', label: 'Preferred name', type: 'text', nameHints: ['preferredname', 'nickname'],
+    patterns: [/\bpreferred (first )?name\b/, /\bnickname\b/, /\bname you go by\b/, /\bgoes? by\b/] },
+  { key: 'fullName', label: 'Full name', type: 'text', auto: ['name'], nameHints: ['fullname', 'full_name', 'yourname'],
+    patterns: [/^(full |legal |your )?name$/, /\bfull name\b/, /\blegal name\b/],
+    exclude: [/first/, /last/, /middle/, /preferred/, /employer/, /university/, /reference/, /emergency/, /file/, /user/] },
+  { key: 'pronouns', label: 'Pronouns', type: 'text', nameHints: ['pronoun'], patterns: [/\bpronouns?\b/] },
+  { key: 'email', label: 'Email', type: 'email', auto: ['email'], nameHints: ['email', 'e-mail'],
+    patterns: [/\bemail\b/], exclude: [/confirm/, /verify/, /reference/, /emergency/, /recruiter/] },
+  { key: 'phone', label: 'Phone', type: 'phone', auto: ['tel', 'tel-national'], nameHints: ['phone', 'mobile', 'tel'],
+    patterns: [/\bphone\b/, /\bphone number\b/], exclude: [/reference/, /emergency/, /country code/, /extension/] },
+  { key: 'addressLine1', label: 'Street address', type: 'text', auto: ['street-address', 'address-line1'], nameHints: ['address1', 'addressline1', 'street'],
+    patterns: [/\bstreet address\b/, /\baddress line 1\b/, /^address$/, /\bmailing address\b/], exclude: [/email/, /link/, /city/, /line 2/] },
+  { key: 'addressLine2', label: 'Address line 2', type: 'text', auto: ['address-line2'], nameHints: ['address2', 'addressline2', 'apartment'],
+    patterns: [/\baddress line 2\b/, /\bapartment\b/, /\bsuite\b/, /\bunit\b/] },
+
+  { key: 'location', label: 'Current location', type: 'text', nameHints: ['location'],
+    patterns: [/\blocation\b/, /\bwhere are you (currently )?(located|based)\b/, /\bcity and state\b/, /\bcity, state\b/],
+    exclude: [/relocat/, /address/] },
+  { key: 'city', label: 'City', type: 'text', auto: ['address-level2'], nameHints: ['city', 'locality'],
+    patterns: [/^city$/, /\bcity\b/, /\btown\b/], exclude: [/university/, /employer/, /location/] },
+  { key: 'state', label: 'State / Province', type: 'text', auto: ['address-level1'], nameHints: ['state', 'province', 'region'],
+    patterns: [/^state$/, /\bstate\b/, /\bprovince\b/, /\bregion\b/] },
+  { key: 'postalCode', label: 'Postal code', type: 'text', auto: ['postal-code'], nameHints: ['zip', 'postal'],
+    patterns: [/\bpostal\b/, /\bpostal code\b/] },
+  { key: 'country', label: 'Country', type: 'text', auto: ['country-name', 'country'], nameHints: ['country'],
+    patterns: [/^country$/, /\bcountry\b/], exclude: [/code/, /citizenship/, /authorized/] },
+  { key: 'linkedin', label: 'LinkedIn', type: 'url', nameHints: ['linkedin'], patterns: [/\blinkedin\b/] },
+  { key: 'github', label: 'GitHub', type: 'url', nameHints: ['github'], patterns: [/\bgithub\b/, /\bgit hub\b/] },
+  { key: 'website', label: 'Website / Portfolio', type: 'url', nameHints: ['website', 'portfolio', 'personalsite'],
+    patterns: [/\bportfolio\b/, /\bpersonal (link|site)\b/, /\bwebsite\b/, /\bother link\b/, /^link$/],
+    exclude: [/linkedin/, /github/, /twitter/, /company/] },
+  { key: 'twitter', label: 'X / Twitter', type: 'url', nameHints: ['twitter'], patterns: [/\btwitter\b/, /\bx handle\b/] },
+  { key: 'currentTitle', label: 'Current job title', type: 'text', auto: ['organization-title'], nameHints: ['jobtitle', 'currenttitle', 'title'],
+    patterns: [/\b(current |most recent )?(job )?title\b/, /\bcurrent (role|position)\b/], exclude: [/mr /, /mrs /, /salutation/] },
+  { key: 'currentEmployer', label: 'Current employer', type: 'text', auto: ['organization'], nameHints: ['company', 'employer'],
+    patterns: [/\bcurrent (employer|company)\b/, /\bmost recent (employer|company)\b/, /^(employer|company)$/], exclude: [/why/, /about/] },
+  { key: 'yearsExperience', label: 'Years of experience', type: 'number', nameHints: ['yearsofexperience', 'yoe'],
+    patterns: [/\byear of experience\b/, /\bhow many year\b/] },
+  { key: 'school', label: 'School', type: 'text', nameHints: ['school', 'university', 'college'],
+    patterns: [/\buniversity\b/, /\bschool\b/, /\balma mater\b/], exclude: [/high school/] },
+  { key: 'degree', label: 'Degree', type: 'text', nameHints: ['degree'], patterns: [/\bdegree\b/, /\blevel of education\b/, /\beducation level\b/] },
+  { key: 'major', label: 'Field of study', type: 'text', nameHints: ['major', 'discipline', 'fieldofstudy'],
+    patterns: [/\bmajor\b/, /\bfield of study\b/, /\bdiscipline\b/, /\bconcentration\b/] },
+  { key: 'graduationDate', label: 'Graduation date', type: 'text', nameHints: ['graduation', 'gradyear', 'enddate'],
+    patterns: [/\bgraduation\b/, /\bgraduated\b/, /\bend (date|year)\b/] },
+  { key: 'gpa', label: 'GPA', type: 'text', nameHints: ['gpa'], patterns: [/\bgpa\b/, /\bgrade point\b/] },
+  { key: 'resumeFile', label: 'Resume file', type: 'file', nameHints: ['resume', 'cv'],
+    patterns: [/\bresume\b/, /\battach.*resume\b/], exclude: [/cover/, /link/, /paste/] },
+  { key: 'coverLetter', label: 'Cover letter', type: 'longtext', nameHints: ['coverletter', 'cover_letter'],
+    patterns: [/\bcover letter\b/] },
+  { key: 'workAuthorization', label: 'Work authorization', type: 'choice', nameHints: ['workauthorization', 'legallyauthorized'],
+    patterns: [/\blegally authorized\b/, /\bauthorized to work\b/, /\bwork authorization\b/, /\bright to work\b/, /\beligible to work\b/] },
+  { key: 'sponsorship', label: 'Visa sponsorship', type: 'choice', nameHints: ['sponsorship', 'visa'],
+    patterns: [/\bsponsorship\b/, /\bsponsor\b/, /\bvisa\b/, /\bh1b\b/, /\bh 1b\b/] },
+  { key: 'relocation', label: 'Willing to relocate', type: 'choice', nameHints: ['relocat'], patterns: [/\brelocat/, /\bwilling to move\b/] },
+  { key: 'locatedInUS', label: 'Currently located in the US', type: 'choice', nameHints: ['currentlylocated', 'locatedinus'],
+    patterns: [/\bcurrently (located|based|residing|living) in\b/, /\bare you located in\b/, /\bdo you (currently )?(live|reside) in\b/],
+
+    exclude: [/relocat/, /willing to move/] },
+  { key: 'startDate', label: 'Earliest start date', type: 'text', nameHints: ['startdate', 'availability'],
+    patterns: [/\bstart date\b/, /\bavailable to start\b/, /\bavailability\b/, /\bwhen (can|could) you start\b/, /\bnotice period\b/] },
+  { key: 'compensation', label: 'Desired compensation', type: 'text', nameHints: ['salary', 'compensation', 'expectedpay'],
+    patterns: [/\bcompensation\b/, /\bcompensation expectation\b/, /\bdesired compensation\b/, /\bexpected compensation\b/] },
+  { key: 'referral', label: 'How did you hear about us', type: 'text', nameHints: ['referral', 'hearabout', 'source'],
+    patterns: [/\bhear about\b/, /\bhow did you (find|learn)\b/, /\breferr?al\b/, /\bsource\b/] },
+  { key: 'gender', label: 'Gender', type: 'choice', nameHints: ['gender'], patterns: [/\bgender\b/, /\bsex\b/] },
+  { key: 'hispanic', label: 'Hispanic / Latino', type: 'choice', nameHints: ['hispanic', 'latino'], patterns: [/\bhispanic\b/, /\blatino\b/] },
+  { key: 'ethnicity', label: 'Race / Ethnicity', type: 'choice', nameHints: ['ethnicity', 'race'],
+    patterns: [/\bethnicity\b/, /\brace\b/, /\bracial\b/], exclude: [/hispanic/] },
+  { key: 'veteran', label: 'Veteran status', type: 'choice', nameHints: ['veteran'], patterns: [/\bveteran\b/, /\bmilitary\b/, /\bprotected veteran\b/] },
+  { key: 'disability', label: 'Disability status', type: 'choice', nameHints: ['disability'], patterns: [/\bdisabilit/, /\bdisabled\b/] },
+  { key: 'age18', label: 'Over 18', type: 'choice', nameHints: ['over18', 'age'], patterns: [/\b18 (year|or older)\b/, /\bover 18\b/, /\bage of 18\b/] },
+  { key: 'clearance', label: 'Security clearance', type: 'choice', nameHints: ['clearance'], patterns: [/\bsecurity clearance\b/, /\bclearance\b/] },
+  { key: 'formerEmployee', label: 'Former employee', type: 'choice', nameHints: ['formeremployee', 'previouslyemployed'],
+    patterns: [/\bpreviously (worked|employed)\b/, /\bformer employee\b/, /\bworked (here|for us)\b/] },
+  { key: 'nonCompete', label: 'Non-compete', type: 'choice', nameHints: ['noncompete'], patterns: [/\bnon compete\b/, /\bnoncompete\b/, /\brestrictive covenant\b/] },
+  { key: 'convictions', label: 'Criminal convictions', type: 'choice', nameHints: ['conviction', 'felony'],
+    patterns: [/\bconvict/, /\bfelony\b/, /\bcriminal\b/] },
+  { key: 'whyCompany', label: 'Why this company', type: 'longtext', nameHints: ['whyus', 'whycompany'],
+    patterns: [/\bwhy (do you want to|are you interested)\b/, /\bwhy (this|our) (company|role|team)\b/, /\bwhy us\b/, /\bwhat (interests|excites) you\b/] }
+];
+
+const KIND_BY_KEY: Record<string, Kind> = Object.create(null);
+for (const kind of KINDS) KIND_BY_KEY[kind.key] = kind;
+
+const PROFILE_FIELDS: Array<{ key: string; label: string; type: AnswerType }> = [
+  { key: 'firstName', label: 'First name', type: 'text' },
+  { key: 'middleName', label: 'Middle name', type: 'text' },
+  { key: 'lastName', label: 'Last name', type: 'text' },
+  { key: 'preferredName', label: 'Preferred name', type: 'text' },
+  { key: 'email', label: 'Email', type: 'email' },
+  { key: 'phone', label: 'Phone', type: 'phone' },
+  { key: 'addressLine1', label: 'Street address', type: 'text' },
+  { key: 'city', label: 'City', type: 'text' },
+  { key: 'state', label: 'State / Province', type: 'text' },
+  { key: 'postalCode', label: 'Postal code', type: 'text' },
+  { key: 'country', label: 'Country', type: 'text' },
+  { key: 'location', label: 'Current location', type: 'text' },
+  { key: 'linkedin', label: 'LinkedIn', type: 'url' },
+  { key: 'github', label: 'GitHub', type: 'url' },
+  { key: 'website', label: 'Website / Portfolio', type: 'url' },
+  { key: 'currentTitle', label: 'Current job title', type: 'text' },
+  { key: 'currentEmployer', label: 'Current employer', type: 'text' },
+  { key: 'yearsExperience', label: 'Years of experience', type: 'number' },
+  { key: 'school', label: 'School', type: 'text' },
+  { key: 'degree', label: 'Degree', type: 'text' },
+  { key: 'major', label: 'Field of study', type: 'text' },
+  { key: 'graduationDate', label: 'Graduation date', type: 'text' },
+  { key: 'gpa', label: 'GPA', type: 'text' }
+];
+
+const YES_NO = ['Yes', 'No'];
+
+const SEED_ANSWERS: Array<Partial<Answer> & { question: string; type: AnswerType }> = [
+  { kind: 'workAuthorization', question: 'Are you legally authorized to work in the United States?', type: 'choice', choices: YES_NO, value: 'Yes',
+    aliases: ['Do you have the right to work in the country of employment?', 'Are you eligible to work in the US?'] },
+  { kind: 'sponsorship', question: 'Will you now or in the future require visa sponsorship?', type: 'choice', choices: YES_NO, value: 'No',
+    aliases: ['Do you require sponsorship for an employment visa?', 'Will you require H-1B sponsorship?'] },
+  { kind: 'relocation', question: 'Are you willing to relocate?', type: 'choice', choices: YES_NO, value: '',
+    aliases: ['Would you relocate for this role?', 'Are you currently based in or willing to relocate to this location?'] },
+  { kind: 'locatedInUS', question: 'Are you currently located in the United States?', type: 'choice', choices: YES_NO, value: '',
+    aliases: ['Are you currently located in the US?', 'Do you currently live in the United States?'] },
+  { kind: 'startDate', question: 'What is your earliest start date?', type: 'text', value: '', aliases: ['When can you start?', 'What is your notice period?', 'Availability'] },
+  { kind: 'compensation', question: 'What are your compensation expectations?', type: 'text', value: '',
+    aliases: ['Desired salary', 'Expected base salary', 'Salary requirements'] },
+  { kind: 'referral', question: 'How did you hear about this role?', type: 'text', value: '', aliases: ['Where did you find this job posting?', 'Referral source'] },
+  { kind: 'whyCompany', question: 'Why do you want to work here?', type: 'longtext', value: '',
+    aliases: ['What interests you about this role?', 'Why are you interested in this company?'] },
+  { kind: 'age18', question: 'Are you at least 18 years old?', type: 'choice', choices: YES_NO, value: 'Yes', aliases: ['Are you over the age of 18?'] },
+  { kind: 'formerEmployee', question: 'Have you previously worked for this company?', type: 'choice', choices: YES_NO, value: 'No', aliases: [] },
+  { kind: 'nonCompete', question: 'Are you subject to a non-compete agreement?', type: 'choice', choices: YES_NO, value: 'No', aliases: [] },
+  { kind: 'convictions', question: 'Have you ever been convicted of a felony?', type: 'choice', choices: YES_NO, value: '', aliases: [] },
+  { kind: 'clearance', question: 'Do you hold an active security clearance?', type: 'choice', choices: YES_NO, value: 'No', aliases: [] },
+  { kind: 'gender', question: 'Gender', type: 'choice', choices: ['Male', 'Female', 'Non-binary', DECLINE], value: DECLINE, aliases: ['What is your gender?'] },
+  { kind: 'hispanic', question: 'Are you Hispanic or Latino?', type: 'choice', choices: ['Yes', 'No', DECLINE], value: DECLINE, aliases: [] },
+  { kind: 'ethnicity', question: 'Race / Ethnicity', type: 'choice',
+    choices: ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino',
+      'Native Hawaiian or Other Pacific Islander', 'White', 'Two or More Races', DECLINE],
+    value: DECLINE, aliases: ['What is your race or ethnicity?'] },
+  { kind: 'veteran', question: 'Protected veteran status', type: 'choice',
+    choices: ['I am not a protected veteran', 'I identify as one or more of the classifications of a protected veteran', DECLINE],
+    value: DECLINE, aliases: ['Are you a protected veteran?'] },
+  { kind: 'disability', question: 'Disability status', type: 'choice',
+    choices: ['Yes, I have a disability, or have had one in the past', 'No, I do not have a disability', DECLINE],
+    value: DECLINE, aliases: ['Do you have a disability?', 'Voluntary self-identification of disability'] }
+];
+
+function defaultSettings(): Settings {
+  return {
+    panelCorner: 'br',
+    askToSaveOnSubmit: true,
+    autofillOnLoad: false,
+    showPanel: true,
+    autoAttachResume: true,
+    fillConfidence: 0.62,
+    suggestConfidence: 0.42,
+    skipFilledFields: true,
+    disabledHosts: []
+  };
+}
+
+function defaultState(): State {
+  return {
+    version: STORAGE_VERSION,
+    profile: {},
+    answers: [],
+    settings: defaultSettings(),
+    resume: null,
+    stats: { filled: 0, learned: 0, applications: 0 },
+    pendingReview: null
+  };
+}
+
+export {
+  STORAGE_VERSION, TYPES, KINDS, KIND_BY_KEY, PROFILE_FIELDS, SEED_ANSWERS,
+  YES_NO, DECLINE, defaultSettings, defaultState
+};
