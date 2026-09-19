@@ -3,6 +3,7 @@ import * as schema from '../../lib/answers/schema.ts';
 import * as matcher from '../../lib/matching/matcher.ts';
 import { readResumeFile, readResumeText, type ParsedResume } from '../../lib/resume/reader.ts';
 import { ATS_HOSTS } from '../../lib/sites.ts';
+import { toWorkEntries } from '../../lib/answers/history.ts';
 import type { Answer, State } from '../../shared/types.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -82,6 +83,7 @@ function renderParsed(result: ParsedResume): void {
 async function applyParsed(): Promise<void> {
   if (!parsed) return;
   await storage.setProfile(parsed.profile);
+  await storage.setHistory(toWorkEntries(parsed.experience));
   await storage.setResume({
     name: parsed.name,
     type: parsed.type,
@@ -92,6 +94,7 @@ async function applyParsed(): Promise<void> {
   });
   state = await storage.load();
   renderProfile();
+  renderHistory();
   renderAnswers();
   flash('Profile updated');
   showTab('profile');
@@ -137,6 +140,23 @@ function wireResumeInput(): void {
     const text = $<HTMLTextAreaElement>('paste-text').value.trim();
     if (text) void handleResume(() => readResumeText(text));
   });
+}
+
+function renderHistory(): void {
+  const entries = state.history ?? [];
+  $('history').innerHTML = entries.length
+    ? entries.map((entry, index) => `
+        <article class="answer" style="padding: 12px 15px">
+          <div class="q">${escapeHtml(entry.title || 'Role')}</div>
+          <div class="v" style="max-width:none">
+            ${escapeHtml(entry.company)}${entry.location ? ` &middot; ${escapeHtml(entry.location)}` : ''}
+            ${entry.start ? ` &middot; ${escapeHtml(entry.start)} to ${entry.current ? 'now' : escapeHtml(entry.end || 'unknown')}` : ''}
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="danger" data-remove="${index}">Remove</button>
+          </div>
+        </article>`).join('')
+    : '<p class="empty">No work history yet. Import a resume on the Resume tab.</p>';
 }
 
 function renderProfile(): void {
@@ -386,6 +406,7 @@ async function boot(): Promise<void> {
 
   wireResumeInput();
   renderProfile();
+  renderHistory();
   renderAnswers();
   renderSettings();
 
@@ -395,6 +416,15 @@ async function boot(): Promise<void> {
   });
 
   $('save-profile').addEventListener('click', () => void saveProfile());
+
+  $('history').addEventListener('click', async (event) => {
+    const index = (event.target as HTMLElement).dataset.remove;
+    if (index === undefined) return;
+    await storage.setHistory((state.history ?? []).filter((_, position) => position !== Number(index)));
+    state = await storage.load();
+    renderHistory();
+    flash('Removed');
+  });
   $('new-answer').addEventListener('click', () => void newAnswer());
   $('answer-list').addEventListener('click', (event) => void onAnswerClick(event));
   $('answer-search').addEventListener('input', (event) => {

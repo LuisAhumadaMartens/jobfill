@@ -260,3 +260,85 @@ test('a debounced search box is not judged on the previous query\'s results', as
   expect(outcome.ok).toBe(true);
   expect(outcome.applied).toBe('San Francisco, California, United States');
 }, 15000);
+
+test('a phone field gets the shape it asks for, not the shape we stored', async () => {
+  const shapes = [
+    ['<input id="p" type="tel" placeholder="(555) 555-5555">', '(786) 830-6320'],
+    ['<input id="p" type="tel" placeholder="555-555-5555">', '786-830-6320'],
+    ['<input id="p" type="tel" maxlength="10">', '7868306320'],
+    ['<input id="p" type="tel" pattern="[0-9]{10}">', '7868306320'],
+    ['<input id="p" type="tel">', '+1 786-830-6320']
+  ] as const;
+
+  for (const [markup, expected] of shapes) {
+    const [field] = render(`<label for="p">Phone</label>${markup}`);
+    const outcome = await fillField(field!, '+17868306320');
+    expect(outcome.applied).toBe(expected);
+    expect((field!.el as HTMLInputElement).value).toBe(expected);
+  }
+});
+
+test('a phone field beside a dial-code selector gets only the national number', async () => {
+  const fields = render(`
+    <form>
+      <label for="c">Country</label>
+      <select id="c" name="country"><option>Select</option><option>United States +1</option><option>Mexico +52</option></select>
+      <label for="p">Phone</label>
+      <input id="p" type="tel" name="phone">
+    </form>`);
+
+  const phone = fields.find((f) => f.kind === 'phone')!;
+  const country = fields.find((f) => f.control === 'select')!;
+
+  const outcome = await fillField(phone, '+17868306320', undefined, { countryField: country, country: 'United States' });
+
+  expect(outcome.applied).toBe('786-830-6320');
+  expect((country.el as HTMLSelectElement).value).toBe('United States +1');
+});
+
+test('a checkbox built out of a div is read and ticked like any other', async () => {
+  const [field] = render(`
+    <div id="l">I agree to the terms</div>
+    <div role="checkbox" aria-checked="false" aria-labelledby="l" tabindex="0"></div>`);
+
+  expect(field!.control).toBe('checkbox');
+  const outcome = await fillField(field!, 'Yes');
+
+  expect(outcome.ok).toBe(true);
+  expect(field!.el.getAttribute('aria-checked')).toBe('true');
+  expect(readValue(field!)).toBe('Yes');
+});
+
+test('an ARIA radio group is one question with real choices', async () => {
+  const [field] = render(`
+    <div id="l">Are you willing to relocate?</div>
+    <div role="radiogroup" aria-labelledby="l">
+      <div role="radio" aria-checked="false">Yes</div>
+      <div role="radio" aria-checked="false">No</div>
+    </div>`);
+
+  expect(field!.control).toBe('radio');
+  expect(field!.options.map((option) => option.text)).toEqual(['Yes', 'No']);
+
+  await fillField(field!, 'Yes');
+  expect(document.querySelectorAll('[role="radio"]')[0]!.getAttribute('aria-checked')).toBe('true');
+  expect(readValue(field!)).toBe('Yes');
+});
+
+test('a yes/no pair of buttons is a question, not two', async () => {
+  const fields = render(`
+    <div class="field">
+      <span id="l">Are you legally authorized to work in the United States?</span>
+      <div class="group">
+        <button type="button" aria-pressed="false">Yes</button>
+        <button type="button" aria-pressed="false">No</button>
+      </div>
+    </div>`);
+
+  const group = fields.find((f) => f.control === 'radio');
+  expect(group).toBeDefined();
+  expect(group!.options.map((option) => option.text)).toEqual(['Yes', 'No']);
+
+  await fillField(group!, 'Yes');
+  expect(document.querySelectorAll('button')[0]!.getAttribute('aria-pressed')).toBe('false');
+});

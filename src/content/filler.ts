@@ -2,7 +2,15 @@ import * as T from '../lib/matching/text.ts';
 import * as matcher from '../lib/matching/matcher.ts';
 import { comboboxSelection } from './scanner.ts';
 import { expandPlace, isPlace } from '../lib/matching/places.ts';
+import { parsePhone, renderPhone } from '../lib/values/phone.ts';
 import type { Answer, ResumeRecord, ScannedField } from '../shared/types.ts';
+
+export interface FillContext {
+
+  countryField?: ScannedField;
+
+  country?: string;
+}
 
 export interface FillOutcome {
   ok: boolean;
@@ -71,9 +79,21 @@ function fillSelect(el: HTMLSelectElement, value: string, answer?: Answer): Fill
   return { ok: true, applied: chosen.text };
 }
 
+function pressOption(node: HTMLElement): void {
+  node.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+  node.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+  node.click();
+  if (node.getAttribute('aria-checked') === 'false') node.setAttribute('aria-checked', 'true');
+}
+
 function fillRadio(field: ScannedField, value: string, answer?: Answer): FillOutcome {
   const chosen = matcher.matchOption(value, field.options, answer);
   if (!chosen?.el) return { ok: false, reason: `No choice matching "${value}"` };
+
+  if (!(chosen.el instanceof HTMLInputElement)) {
+    pressOption(chosen.el);
+    return { ok: true, applied: chosen.text };
+  }
 
   const input = chosen.el as HTMLInputElement;
   if (!input.checked) {
@@ -88,6 +108,19 @@ function fillRadio(field: ScannedField, value: string, answer?: Answer): FillOut
 
 function fillCheckbox(field: ScannedField, value: string, answer?: Answer): FillOutcome {
   const inputs = field.inputs ?? [];
+
+  if (!inputs.length && !field.options.length) {
+    const wanted = T.asBoolean(value);
+    if (wanted === null) return { ok: false, reason: `"${value}" is not a yes or no` };
+    const checked = field.el.getAttribute('aria-checked') === 'true';
+    if (checked !== wanted) {
+      field.el.click();
+      if ((field.el.getAttribute('aria-checked') === 'true') !== wanted) {
+        field.el.setAttribute('aria-checked', String(wanted));
+      }
+    }
+    return { ok: true, applied: wanted ? 'Yes' : 'No' };
+  }
 
   if (inputs.length === 1) {
     const wanted = T.asBoolean(value);
@@ -294,8 +327,47 @@ export function scrollTo(field: ScannedField): void {
   (field.el as HTMLInputElement).focus?.({ preventScroll: true });
 }
 
-export async function fillField(field: ScannedField, value: string, answer?: Answer): Promise<FillOutcome> {
+async function fillPhone(field: ScannedField, value: string, context: FillContext): Promise<FillOutcome> {
+  const countryField = context.countryField;
+
+  if (countryField) {
+    const phone = parsePhone(value);
+    const wanted = [context.country, phone ? `+${phone.country}` : '']
+      .filter((candidate): candidate is string => !!candidate);
+
+    for (const candidate of wanted) {
+      const outcome = countryField.control === 'combobox'
+        ? await fillCombobox(countryField, candidate)
+        : fillSelect(countryField.el as HTMLSelectElement, candidate);
+      if (outcome.ok) break;
+    }
+  }
+
+  const text = renderPhone(value, {
+    placeholder: field.placeholder,
+    pattern: field.pattern,
+    maxLength: field.maxLength,
+    hasCountryControl: !!countryField
+  });
+
+  typeInto(field.el, text);
+  return { ok: true, applied: text };
+}
+
+export async function fillField(
+  field: ScannedField,
+  value: string,
+  answer?: Answer,
+  context: FillContext = {}
+): Promise<FillOutcome> {
   if (value == null || value === '') return { ok: false, reason: 'No value saved yet' };
+
+  const isPhone = answer?.type === 'phone' || field.kind === 'phone' || field.type === 'tel';
+  if (isPhone && field.control === 'input' && parsePhone(value)) {
+    const outcome = await fillPhone(field, value, context);
+    flash(field.el, outcome.ok);
+    return outcome;
+  }
 
   let outcome: FillOutcome;
   switch (field.control) {

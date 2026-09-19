@@ -17,6 +17,8 @@ export interface Answer {
 
   scope: string;
   source: 'seed' | 'user' | 'profile' | 'import';
+
+  control?: ControlKind;
   notes: string;
   archived: boolean;
   usageCount: number;
@@ -57,6 +59,15 @@ export interface Stats {
   applications: number;
 }
 
+export interface WorkEntry {
+  title: string;
+  company: string;
+  location: string;
+  start: string;
+  end: string;
+  current: boolean;
+}
+
 export interface State {
   version: number;
   profile: Profile;
@@ -66,6 +77,7 @@ export interface State {
   stats: Stats;
 
   pendingReview: PendingReview | null;
+  history: WorkEntry[];
 }
 
 export interface FieldOption {
@@ -88,6 +100,7 @@ export interface ScannedField {
   id: string;
   autocomplete: string;
   placeholder: string;
+  pattern: string;
   label: string;
   context: string;
   required: boolean;
@@ -108,6 +121,8 @@ export interface SerializedField {
   label: string;
   context: string;
   placeholder: string;
+  pattern: string;
+  maxLength: number | null;
   required: boolean;
   kind: string | null;
   currentValue: string;

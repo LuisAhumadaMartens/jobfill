@@ -1,9 +1,11 @@
 import * as T from '../matching/text.ts';
 import * as S from './schema.ts';
 import { isUnitedStates } from '../matching/synonyms.ts';
-import type { Answer, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State } from '../../shared/types.ts';
+import { classify } from '../matching/matcher.ts';
+import { parsePhone } from '../values/phone.ts';
+import type { Answer, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
 
-const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview'];
+const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history'];
 
 interface Area {
   get(keys?: string[] | null): Promise<Record<string, unknown>>;
@@ -48,6 +50,7 @@ function makeAnswer(input: Partial<Answer> & { question?: string }): Answer {
     valueAliases: input.valueAliases || undefined,
     scope: input.scope || 'global',
     source: input.source || 'user',
+    control: input.control,
     notes: input.notes || '',
     archived: !!input.archived,
     usageCount: input.usageCount || 0,
@@ -74,17 +77,45 @@ function seedAnswers(): Answer[] {
   return S.SEED_ANSWERS.map((seed) => makeAnswer(Object.assign({ source: 'seed' }, seed)));
 }
 
+function repair(state: State): State {
+  const answers = state.answers.map((answer) => {
+    let kind = answer.kind;
+    if (answer.source === 'user') kind = classify({ label: answer.question, control: answer.control }) ?? null;
+    if (!S.kindFitsType(kind, answer.type)) kind = null;
+
+    let value = answer.value;
+    if (value && (answer.type === 'phone' || kind === 'phone')) {
+      value = parsePhone(value)?.e164 ?? value;
+    }
+
+    return kind === answer.kind && value === answer.value ? answer : { ...answer, kind, value };
+  });
+
+  const profile = { ...state.profile };
+  if (profile.phone) profile.phone = parsePhone(profile.phone)?.e164 ?? profile.phone;
+
+  return { ...state, answers, profile, version: S.STORAGE_VERSION };
+}
+
 async function load(): Promise<State> {
   const raw = await area.get(KEYS);
   const state = Object.assign(S.defaultState(), raw || {});
   state.settings = Object.assign(S.defaultSettings(), state.settings || {});
   state.profile = state.profile || {};
+  state.history = Array.isArray(state.history) ? state.history : [];
   state.stats = Object.assign({ filled: 0, learned: 0, applications: 0 }, state.stats || {});
 
   if (!Array.isArray(state.answers) || !raw || raw.answers === undefined) {
     state.answers = Array.isArray(state.answers) && state.answers.length ? state.answers : seedAnswers();
     await area.set({ answers: state.answers, version: S.STORAGE_VERSION, settings: state.settings });
   }
+
+  if (state.version !== S.STORAGE_VERSION) {
+    const repaired = repair(state);
+    await area.set({ answers: repaired.answers, profile: repaired.profile, version: S.STORAGE_VERSION });
+    return repaired;
+  }
+
   return state;
 }
 
@@ -248,17 +279,23 @@ async function applyReview(items: ReviewItem[]): Promise<{ created: number; upda
     }
 
     if (item.action === 'update' && item.answerId) {
-      await upsertAnswer({ id: item.answerId, value: item.value });
+      const target = (await load()).answers.find((answer) => answer.id === item.answerId);
+      const value = target?.type === 'phone' ? parsePhone(item.value)?.e164 ?? item.value : item.value;
+
+      await upsertAnswer({ id: item.answerId, value });
       await addAlias(item.answerId, item.question);
+
+      if (target?.source === 'profile' && target.kind) await setProfile({ [target.kind]: value });
       tally.updated++;
       continue;
     }
 
     await upsertAnswer({
       question: item.question,
-      value: item.value,
+      value: item.type === 'phone' ? parsePhone(item.value)?.e164 ?? item.value : item.value,
       kind: item.kind,
       type: item.type,
+      control: item.control,
       choices: item.choices,
       source: 'user'
     });
@@ -271,6 +308,11 @@ async function applyReview(items: ReviewItem[]): Promise<{ created: number; upda
     stats: Object.assign(state.stats, { applications: state.stats.applications + 1 })
   });
   return tally;
+}
+
+async function setHistory(history: WorkEntry[]): Promise<WorkEntry[]> {
+  await patch({ history });
+  return history;
 }
 
 async function setResume(resume: ResumeRecord | null): Promise<ResumeRecord | null> {
@@ -340,6 +382,6 @@ async function setHostDisabled(host: string, disabled: boolean): Promise<Setting
 export {
   KEYS, uid, makeAnswer, seedAnswers, load, patch, getAnswers, getSettings, setSettings,
   upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile, setResume,
-  setPendingReview, getPendingReview, applyReview,
+  setPendingReview, getPendingReview, applyReview, setHistory,
   exportAll, importAll, clearAll, isHostDisabled, setHostDisabled
 };

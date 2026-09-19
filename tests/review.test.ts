@@ -13,6 +13,8 @@ function field(label: string, over: Partial<SerializedField> = {}): SerializedFi
     label,
     context: '',
     placeholder: '',
+    pattern: '',
+    maxLength: null,
     required: false,
     kind: null,
     currentValue: '',
@@ -137,5 +139,44 @@ describe('saving what was ticked', () => {
     expect(await storage.getPendingReview('job-boards.greenhouse.io')).toBeNull();
 
     expect((await storage.load()).pendingReview).toBeNull();
+  });
+});
+
+describe('a site reformatting an answer is not a change', () => {
+  test('phone, link and location differences are left alone', async () => {
+    const phone = await storage.upsertAnswer({ question: 'Phone', value: '+17868306320', type: 'phone', kind: 'phone' });
+    const link = await storage.upsertAnswer({ question: 'LinkedIn', value: 'https://linkedin.com/in/luis', type: 'url', kind: 'linkedin' });
+    const answers = await storage.getAnswers();
+
+    const items = buildReviewItems([
+      entry('Phone', '+1 786-830-6320', { type: 'tel' }),
+      entry('LinkedIn', 'https://www.linkedin.com/in/luis')
+    ], answers);
+
+    expect(items.filter((item) => item.action === 'update')).toHaveLength(0);
+    expect(phone.value).toBe('+17868306320');
+    expect(link.value).toBe('https://linkedin.com/in/luis');
+  });
+
+  test('a genuinely different number is still offered', async () => {
+    await storage.upsertAnswer({ question: 'Phone', value: '+17868306320', type: 'phone', kind: 'phone' });
+    const answers = await storage.getAnswers();
+    const items = buildReviewItems([entry('Phone', '+1 415-555-0000', { type: 'tel' })], answers);
+    expect(items[0]?.action).toBe('update');
+  });
+
+  test('updating a profile-backed answer writes back to the profile', async () => {
+    await storage.setProfile({ phone: '+17868306320' });
+    const mirrored = (await storage.getAnswers()).find((answer) => answer.kind === 'phone' && answer.source === 'profile')!;
+
+    await storage.applyReview([{
+      uid: 'a', question: 'Phone', value: '+1 (415) 555-0000', kind: 'phone',
+      control: 'input', type: 'phone', action: 'update', answerId: mirrored.id, previous: mirrored.value
+    }]);
+
+    const state = await storage.load();
+    const after = state.answers.find((answer) => answer.id === mirrored.id)!;
+    expect(after.value).toBe('+14155550000');
+    expect(state.profile.phone).toBe('+14155550000');
   });
 });

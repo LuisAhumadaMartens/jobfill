@@ -1,6 +1,6 @@
 import type { Answer, AnswerType, Kind, Settings, State } from '../../shared/types.ts';
 
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 const TYPES: AnswerType[] = ['text', 'longtext', 'choice', 'multichoice', 'boolean', 'number', 'date', 'email', 'phone', 'url', 'file'];
 
@@ -47,6 +47,10 @@ const KINDS: Kind[] = [
   { key: 'twitter', label: 'X / Twitter', type: 'url', nameHints: ['twitter'], patterns: [/\btwitter\b/, /\bx handle\b/] },
   { key: 'currentTitle', label: 'Current job title', type: 'text', auto: ['organization-title'], nameHints: ['jobtitle', 'currenttitle', 'title'],
     patterns: [/\b(current |most recent )?(job )?title\b/, /\bcurrent (role|position)\b/], exclude: [/mr /, /mrs /, /salutation/] },
+  { key: 'employerName', label: 'Employer (work history)', type: 'text', nameHints: ['employername', 'companyname'],
+    patterns: [/\b(employer|company) name\b/, /\bname of (the )?(employer|company)\b/], exclude: [/why/, /about/, /current/, /most recent/] },
+  { key: 'jobTitle', label: 'Job title (work history)', type: 'text', nameHints: ['jobtitle', 'positiontitle'],
+    patterns: [/\bjob title\b/, /\bposition title\b/, /\btitle held\b/], exclude: [/current/, /salutation/] },
   { key: 'currentEmployer', label: 'Current employer', type: 'text', auto: ['organization'], nameHints: ['company', 'employer'],
     patterns: [/\bcurrent (employer|company)\b/, /\bmost recent (employer|company)\b/, /^(employer|company)$/], exclude: [/why/, /about/] },
   { key: 'yearsExperience', label: 'Years of experience', type: 'number', nameHints: ['yearsofexperience', 'yoe'],
@@ -74,6 +78,10 @@ const KINDS: Kind[] = [
     exclude: [/relocat/, /willing to move/] },
   { key: 'startDate', label: 'Earliest start date', type: 'text', nameHints: ['startdate', 'availability'],
     patterns: [/\bstart date\b/, /\bavailable to start\b/, /\bavailability\b/, /\bwhen (can|could) you start\b/, /\bnotice period\b/] },
+  { key: 'salaryMin', label: 'Salary range, lower end', type: 'text', nameHints: ['salarymin', 'minsalary', 'salaryfrom'],
+    patterns: [/\bbeginning of\b.*\bcompensation\b/, /\b(minimum|lowest|starting|bottom)\b.*\bcompensation\b/, /\bcompensation\b.*\brange\b.*\bfrom\b/] },
+  { key: 'salaryMax', label: 'Salary range, upper end', type: 'text', nameHints: ['salarymax', 'maxsalary', 'salaryto'],
+    patterns: [/\bend of\b.*\bcompensation\b/, /\b(maximum|highest|top)\b.*\bcompensation\b/, /\bcompensation\b.*\brange\b.*\bto\b/] },
   { key: 'compensation', label: 'Desired compensation', type: 'text', nameHints: ['salary', 'compensation', 'expectedpay'],
     patterns: [/\bcompensation\b/, /\bcompensation expectation\b/, /\bdesired compensation\b/, /\bexpected compensation\b/] },
   { key: 'referral', label: 'How did you hear about us', type: 'text', nameHints: ['referral', 'hearabout', 'source'],
@@ -99,6 +107,7 @@ const KIND_BY_KEY: Record<string, Kind> = Object.create(null);
 for (const kind of KINDS) KIND_BY_KEY[kind.key] = kind;
 
 const PROFILE_FIELDS: Array<{ key: string; label: string; type: AnswerType }> = [
+  { key: 'fullName', label: 'Full name', type: 'text' },
   { key: 'firstName', label: 'First name', type: 'text' },
   { key: 'middleName', label: 'Middle name', type: 'text' },
   { key: 'lastName', label: 'Last name', type: 'text' },
@@ -138,7 +147,13 @@ const SEED_ANSWERS: Array<Partial<Answer> & { question: string; type: AnswerType
   { kind: 'startDate', question: 'What is your earliest start date?', type: 'text', value: '', aliases: ['When can you start?', 'What is your notice period?', 'Availability'] },
   { kind: 'compensation', question: 'What are your compensation expectations?', type: 'text', value: '',
     aliases: ['Desired salary', 'Expected base salary', 'Salary requirements'] },
-  { kind: 'referral', question: 'How did you hear about this role?', type: 'text', value: '', aliases: ['Where did you find this job posting?', 'Referral source'] },
+  { kind: 'referral', question: 'How did you hear about this role?', type: 'text', value: '',
+    aliases: ['Where did you find this job posting?', 'Referral source', 'What brought you to this job posting?', 'How did you hear about this job?'] },
+  { kind: 'pronouns', question: 'What are your pronouns?', type: 'text', value: '', aliases: ['Pronouns'] },
+  { kind: 'salaryMin', question: 'What is the lower end of your expected salary range?', type: 'text', value: '',
+    aliases: ['What is the beginning of your desired annual base salary range?', 'Minimum expected salary'] },
+  { kind: 'salaryMax', question: 'What is the upper end of your expected salary range?', type: 'text', value: '',
+    aliases: ['What is the end of your desired annual base salary range?', 'Maximum expected salary'] },
   { kind: 'whyCompany', question: 'Why do you want to work here?', type: 'longtext', value: '',
     aliases: ['What interests you about this role?', 'Why are you interested in this company?'] },
   { kind: 'age18', question: 'Are you at least 18 years old?', type: 'choice', choices: YES_NO, value: 'Yes', aliases: ['Are you over the age of 18?'] },
@@ -159,6 +174,16 @@ const SEED_ANSWERS: Array<Partial<Answer> & { question: string; type: AnswerType
     choices: ['Yes, I have a disability, or have had one in the past', 'No, I do not have a disability', DECLINE],
     value: DECLINE, aliases: ['Do you have a disability?', 'Voluntary self-identification of disability'] }
 ];
+
+const STRICT_KIND_TYPES: AnswerType[] = ['phone', 'email', 'url', 'number', 'date', 'file'];
+
+function kindFitsType(kind: string | null | undefined, type: AnswerType): boolean {
+  if (!kind) return true;
+  const spec = KIND_BY_KEY[kind];
+  if (!spec) return false;
+  if (spec.type === type) return true;
+  return !STRICT_KIND_TYPES.includes(spec.type) && !STRICT_KIND_TYPES.includes(type);
+}
 
 function defaultSettings(): Settings {
   return {
@@ -182,11 +207,12 @@ function defaultState(): State {
     settings: defaultSettings(),
     resume: null,
     stats: { filled: 0, learned: 0, applications: 0 },
-    pendingReview: null
+    pendingReview: null,
+    history: []
   };
 }
 
 export {
-  STORAGE_VERSION, TYPES, KINDS, KIND_BY_KEY, PROFILE_FIELDS, SEED_ANSWERS,
+  STORAGE_VERSION, kindFitsType, TYPES, KINDS, KIND_BY_KEY, PROFILE_FIELDS, SEED_ANSWERS,
   YES_NO, DECLINE, defaultSettings, defaultState
 };

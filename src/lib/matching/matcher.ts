@@ -108,7 +108,7 @@ function rank(field: FieldLike | null | undefined, answers: Answer[], options?: 
       if (value > score) { score = value; reason = why; }
     };
 
-    if (kind && answer.kind === kind) consider(SCORE.kind, 'kind');
+    if (kind && answer.kind === kind && S.kindFitsType(answer.kind, answer.type)) consider(SCORE.kind, 'kind');
 
     if (normLabel) {
       for (const phrase of phrasesOf(answer)) {

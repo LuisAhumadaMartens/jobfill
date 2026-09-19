@@ -166,6 +166,13 @@ function optionsOfSelect(el: HTMLSelectElement): FieldOption[] {
   return [...el.options].map((opt) => ({ value: opt.value, text: T.squish(opt.textContent), el: opt }));
 }
 
+function optionsOfNodes(nodes: HTMLElement[]): FieldOption[] {
+  return nodes.map((node) => {
+    const text = tidyLabel(node.getAttribute('aria-label') || textOf(node) || node.getAttribute('value') || '');
+    return { value: text, text, el: node };
+  });
+}
+
 function optionsOfGroup(inputs: HTMLInputElement[]): FieldOption[] {
   return inputs.map((input) => ({
     value: input.value,
@@ -214,6 +221,7 @@ function describe(el: Element, control: ControlKind, extra?: Partial<ScannedFiel
     id: el.id || '',
     autocomplete: el.getAttribute('autocomplete') || '',
     placeholder: el.getAttribute('placeholder') || '',
+    pattern: el.getAttribute('pattern') || '',
     label,
     context: contextFor(el),
     required: input.required || el.getAttribute('aria-required') === 'true',
@@ -238,12 +246,20 @@ function currentValueOf(descriptor: ScannedField): string {
       return select.value ? T.squish(chosen ? chosen.textContent : select.value) : '';
     }
     case 'radio': {
+      if (!inputs.length) {
+        const picked = descriptor.options.find((option) =>
+          option.el?.getAttribute('aria-checked') === 'true' || option.el?.getAttribute('aria-pressed') === 'true');
+        return picked ? picked.text : '';
+      }
       const chosen = inputs.find((input) => input.checked);
       if (!chosen) return '';
       const option = descriptor.options.find((opt) => opt.el === chosen);
       return option ? option.text : chosen.value;
     }
     case 'checkbox': {
+      if (!inputs.length && !descriptor.options.length) {
+        return el.getAttribute('aria-checked') === 'true' ? 'Yes' : '';
+      }
       if (inputs.length === 1) return inputs[0]!.checked ? 'Yes' : '';
       return descriptor.options
         .filter((opt) => (opt.el as HTMLInputElement | undefined)?.checked)
@@ -266,7 +282,9 @@ function currentValueOf(descriptor: ScannedField): string {
 function scan(scope?: ParentNode): ScannedField[] {
   usedIds.clear();
   const within = scope || document;
-  const elements = [...within.querySelectorAll<HTMLElement>('input, select, textarea, [contenteditable="true"]')];
+  const elements = [...within.querySelectorAll<HTMLElement>(
+    'input, select, textarea, [contenteditable="true"], [role="checkbox"], [role="switch"], [role="radiogroup"]'
+  )];
   const fields: ScannedField[] = [];
   const seenGroups = new Set<string>();
 
@@ -274,6 +292,23 @@ function scan(scope?: ParentNode): ScannedField[] {
     if (!isVisible(el) || !isFillable(el)) continue;
 
     const tag = el.tagName.toLowerCase();
+    const role = el.getAttribute('role');
+
+    if (tag !== 'input' && (role === 'checkbox' || role === 'switch')) {
+      const descriptor = describe(el, 'checkbox');
+      descriptor.currentValue = currentValueOf(descriptor);
+      fields.push(descriptor);
+      continue;
+    }
+
+    if (role === 'radiogroup') {
+      const radios = [...el.querySelectorAll<HTMLElement>('[role="radio"]')].filter((node) => isVisible(node));
+      if (!radios.length) continue;
+      const descriptor = describe(el, 'radio', { options: optionsOfNodes(radios) });
+      descriptor.currentValue = currentValueOf(descriptor);
+      fields.push(descriptor);
+      continue;
+    }
 
     if (tag === 'select') {
       const descriptor = describe(el, 'select', { options: optionsOfSelect(el as HTMLSelectElement) });
@@ -340,7 +375,30 @@ function scan(scope?: ParentNode): ScannedField[] {
     fields.push(descriptor);
   }
 
+  fields.push(...toggleGroups(within, fields));
   return fields.filter((field) => field.label || field.kind);
+}
+
+function toggleGroups(within: ParentNode, already: ScannedField[]): ScannedField[] {
+  const claimed = new Set(already.map((field) => field.el));
+  const byParent = new Map<HTMLElement, HTMLElement[]>();
+
+  for (const button of within.querySelectorAll<HTMLElement>('button[aria-pressed], [role="button"][aria-pressed]')) {
+
+    if (!button.getClientRects().length || claimed.has(button)) continue;
+    const parent = button.parentElement;
+    if (!parent) continue;
+    byParent.set(parent, [...(byParent.get(parent) ?? []), button]);
+  }
+
+  const groups: ScannedField[] = [];
+  for (const [parent, buttons] of byParent) {
+    if (buttons.length < 2 || claimed.has(parent)) continue;
+    const descriptor = describe(parent, 'radio', { options: optionsOfNodes(buttons) });
+    descriptor.currentValue = currentValueOf(descriptor);
+    groups.push(descriptor);
+  }
+  return groups;
 }
 
 function looksLikeApplication(fields: ScannedField[]): boolean {
@@ -368,6 +426,8 @@ function serialize(field: ScannedField): SerializedField {
     label: field.label,
     context: field.context,
     placeholder: field.placeholder,
+    pattern: field.pattern,
+    maxLength: field.maxLength,
     required: field.required,
     kind: field.kind,
     currentValue: field.currentValue,

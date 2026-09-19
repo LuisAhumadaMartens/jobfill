@@ -3,6 +3,7 @@ import * as matcher from '../lib/matching/matcher.ts';
 import * as T from '../lib/matching/text.ts';
 import * as places from '../lib/matching/places.ts';
 import { answerTypeFor as typeForField, buildReviewItems } from '../lib/answers/review.ts';
+import { valueFromHistory } from '../lib/answers/history.ts';
 import { verifyValue, verdictNote, verdictSummary } from '../lib/matching/verify.ts';
 import * as scanner from './scanner.ts';
 import * as filler from './filler.ts';
@@ -98,6 +99,11 @@ function planFor(field: ScannedField, current: State): FieldPlan {
     value: c.answer.value,
     score: c.score
   }));
+
+  const fromHistory = valueFromHistory(field, current.history);
+  if (fromHistory && !existing) {
+    return { ...base, status: 'ready', value: fromHistory, reason: 'history' };
+  }
 
   const derived = deriveFromLocation(field, current);
 
@@ -210,6 +216,27 @@ function updatePanel(isApplication: boolean): void {
   panel.update(plans, state.answers);
 }
 
+const DIAL_CODE = /^\s*\+\d/;
+
+function countryControlFor(phone: ScannedField): ScannedField | undefined {
+  const candidates = [...fields.values()].filter((field) => {
+    if (field.uid === phone.uid) return false;
+    if (field.control !== 'select' && field.control !== 'combobox') return false;
+    if (field.kind === 'country') return true;
+    return field.options.some((option) => DIAL_CODE.test(option.text) || DIAL_CODE.test(option.value));
+  });
+
+  const before = candidates.filter((field) => {
+    const position = field.el.compareDocumentPosition(phone.el);
+    return (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  });
+
+  const form = (phone.el as HTMLInputElement).form;
+  const sameForm = before.filter((field) => !form || (field.el as HTMLInputElement).form === form);
+  const pool = sameForm.length ? sameForm : before;
+  return pool[pool.length - 1];
+}
+
 function planOf(uid: string): FieldPlan | undefined {
   return plans.find((plan) => plan.field.uid === uid);
 }
@@ -241,7 +268,10 @@ async function fillOne(uid: string, answerId?: string, value?: string): Promise<
 
   const answer = state.answers.find((a) => a.id === (answerId ?? plan.answerId));
   const text = value ?? answer?.value ?? '';
-  const outcome = await filler.fillField(field, text, answer);
+  const isPhone = answer?.type === 'phone' || field.kind === 'phone' || field.type === 'tel';
+  const outcome = await filler.fillField(field, text, answer, isPhone
+    ? { countryField: countryControlFor(field), country: state.profile.country }
+    : {});
   attempted.set(uid, { value: outcome.applied ?? text, ok: outcome.ok });
 
   plan.status = outcome.ok ? 'filled' : 'failed';

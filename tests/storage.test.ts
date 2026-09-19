@@ -1,4 +1,4 @@
-import { beforeEach, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import * as storage from '../src/lib/answers/storage.ts';
 
 beforeEach(async () => {
@@ -110,4 +110,36 @@ test('but it never overwrites an answer you gave yourself', async () => {
 
   const located = (await storage.getAnswers()).find((answer) => answer.kind === 'locatedInUS');
   expect(located?.value).toBe('No');
+});
+
+describe('repairing data written by an older build', () => {
+  test('a kind that cannot fit the answer is dropped, and phones are folded to one form', async () => {
+
+    await storage.patch({
+      version: 1,
+      profile: { phone: '+1 (786) 830-6320' },
+      answers: [
+        storage.makeAnswer({ kind: 'phone', type: 'boolean', source: 'user', value: 'Yes',
+          question: 'By checking this box, I consent to Reddit collecting, storing, and processing my responses' }),
+        storage.makeAnswer({ kind: 'phone', type: 'phone', source: 'profile', question: 'Phone', value: '+1 (786) 830-6320' })
+      ]
+    });
+
+    const state = await storage.load();
+    const consent = state.answers.find((answer) => answer.type === 'boolean')!;
+    const phone = state.answers.find((answer) => answer.type === 'phone')!;
+
+    expect(consent.kind).toBeNull();
+    expect(phone.kind).toBe('phone');
+    expect(phone.value).toBe('+17868306320');
+    expect(state.profile.phone).toBe('+17868306320');
+    expect(state.version).toBe(2);
+  });
+
+  test('the repair runs once, not on every load', async () => {
+    const first = await storage.load();
+    const second = await storage.load();
+    expect(second.version).toBe(first.version);
+    expect(second.answers).toEqual(first.answers);
+  });
 });

@@ -1,5 +1,6 @@
 import * as matcher from '../matching/matcher.ts';
 import { normalize, squish } from '../matching/text.ts';
+import { sameValue } from '../matching/verify.ts';
 import type { Answer, AnswerType, ReviewItem, SerializedField } from '../../shared/types.ts';
 
 export function answerTypeFor(field: SerializedField): AnswerType {
@@ -72,7 +73,7 @@ export function buildReviewItems(entries: FieldValue[], answers: Answer[], host 
 
     const known = [answer.question, ...answer.aliases].some((phrase) => normalize(phrase) === normalize(question));
 
-    if (normalize(answer.value) === normalize(value)) {
+    if (sameValue(answer.value, value, { answer })) {
 
       if (known) continue;
       items.push({ ...base, action: 'alias', answerId: answer.id, previous: answer.value });
