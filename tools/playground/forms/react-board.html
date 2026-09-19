@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Apply: Platform Engineer</title>
+<style>
+ body{font:15px/1.6 -apple-system,sans-serif;max-width:620px;margin:40px auto;padding:0 20px;color:#14151a}
+ h1{font-size:20px} h2{font-size:13px;text-transform:uppercase;color:#777;margin-top:30px}
+ .field{margin-bottom:18px}
+ label,.lbl{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+ input,select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font:inherit;background:#fff}
+ .combo{position:relative}
+ .ctrl{display:flex;align-items:center;gap:6px;border:1px solid #ccc;border-radius:6px;padding:4px 8px;background:#fff}
+ .ctrl input{border:0;padding:4px 0;flex:1;outline:none}
+ .ph{color:#999}
+ .val{font-weight:500}
+ #portal{position:absolute;z-index:9}
+ .menu{position:absolute;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 6px 18px rgb(0 0 0/12%);min-width:240px;max-height:200px;overflow:auto}
+ .opt{padding:7px 10px;cursor:pointer}
+ .opt:hover{background:#eef}
+ .log{margin-top:26px;padding:12px 14px;background:#f6f6f8;border-radius:8px;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;color:#444}
+ .note{color:#666;font-size:13px}
+</style></head>
+<body>
+<h1>Platform Engineer Application</h1>
+<p class="note">
+  Shaped like the newer Greenhouse boards: the selects are controlled by the page's own
+  state, and re-render whenever any field changes. A value written without the page
+  noticing is put back to empty on the next render, which looks like an earlier field
+  clearing itself when a later one is filled.
+</p>
+
+<form onsubmit="event.preventDefault();log('submit blocked, this is a fixture')">
+  <div class="field"><label for="first">First Name *</label><input id="first" name="first_name" autocomplete="given-name"></div>
+  <div class="field"><label for="last">Last Name *</label><input id="last" name="last_name" autocomplete="family-name"></div>
+  <div class="field"><label for="email">Email *</label><input id="email" type="email" name="email" autocomplete="email"></div>
+  <div class="field"><label for="phone">Phone</label><input id="phone" type="tel" name="phone" autocomplete="tel"></div>
+
+  <h2>Details</h2>
+
+  <div class="field"><label for="country">Country *</label>
+    <select id="country" name="country" data-controlled>
+      <option value="">Select…</option>
+      <option>Canada</option>
+      <option>Mexico</option>
+      <option>United States of America</option>
+      <option>United Kingdom</option>
+    </select></div>
+
+  <div class="field combo">
+    <span class="lbl" id="l-edu">Degree</span>
+    <div class="ctrl" id="edu-ctrl">
+      <span class="ph">Select…</span>
+      <input role="combobox" aria-labelledby="l-edu" aria-controls="edu-menu" aria-autocomplete="list" aria-expanded="false">
+    </div>
+  </div>
+
+  <div class="field combo">
+    <span class="lbl" id="l-school">School</span>
+    <div class="ctrl" id="school-ctrl">
+      <span class="ph">Select…</span>
+      <input role="combobox" aria-labelledby="l-school" aria-controls="school-menu" aria-autocomplete="list" aria-expanded="false">
+    </div>
+  </div>
+
+  <div class="field combo">
+    <span class="lbl" id="l-loc">Location (City) *</span>
+    <div class="ctrl" id="loc-ctrl">
+      <span class="ph">Select…</span>
+      <input role="combobox" aria-labelledby="l-loc" aria-controls="loc-menu" aria-autocomplete="list" aria-expanded="false">
+    </div>
+  </div>
+
+  <div class="field"><label for="bay">Are you currently based in or willing to relocate to the Bay Area? *</label>
+    <select id="bay" name="bay_area" data-controlled>
+      <option value="">Select…</option><option>Yes</option><option>No</option>
+    </select></div>
+
+  <div class="field"><label for="auth">Are you legally authorized to work in the United States? *</label>
+    <select id="auth" name="work_auth" data-controlled>
+      <option value="">Select…</option><option>Yes</option><option>No</option>
+    </select></div>
+
+  <div class="field"><label for="spons">Will you now or in the future require sponsorship? *</label>
+    <select id="spons" name="sponsorship" data-controlled>
+      <option value="">Select…</option><option>Yes</option><option>No</option>
+    </select></div>
+
+  <div class="field combo">
+    <span class="lbl" id="l-state">State / Province</span>
+    <div class="ctrl" id="state-ctrl">
+      <span class="ph">Select…</span>
+      <input role="combobox" aria-labelledby="l-state" aria-controls="state-menu" aria-autocomplete="list" aria-expanded="false">
+    </div>
+  </div>
+
+  <button type="submit">Submit application</button>
+</form>
+
+<div class="log" id="log">page state: {}</div>
+<div id="portal"></div>
+
+<script>
+  const logEl = document.getElementById('log');
+  const state = {};
+  function log(message) { logEl.textContent = message + '\n\npage state: ' + JSON.stringify(state, null, 1); }
+
+  /**
+   * The value tracker React installs on form elements: a change event whose
+   * value matches what the page last wrote is treated as noise.
+   */
+  function control(el) {
+    const proto = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    let tracked = proto.get.call(el);
+    Object.defineProperty(el, 'value', {
+      configurable: true,
+      get() { return proto.get.call(this); },
+      set(next) { tracked = String(next); proto.set.call(this, next); }
+    });
+    el.addEventListener('change', () => {
+      const current = String(proto.get.call(el));
+      if (current === tracked) { log('ignored a change on ' + el.name + ' (tracker saw no change)'); return; }
+      tracked = current;
+      state[el.name] = current;
+      log('accepted ' + el.name + ' = ' + current);
+      render();
+    });
+    el.__render = () => proto.set.call(el, state[el.name] ?? '');
+  }
+
+  const controlled = [...document.querySelectorAll('select[data-controlled]')];
+  controlled.forEach(control);
+  function render() { for (const el of controlled) el.__render(); }
+
+  // ---- comboboxes whose menus render in a portal ----
+  const portal = document.getElementById('portal');
+
+  /**
+   * @param key        where the choice lands in page state
+   * @param items      the options
+   * @param serverSide true for a search box that shows nothing until you type
+   */
+  function combobox(ctrlId, menuId, key, items, serverSide) {
+    const ctrl = document.getElementById(ctrlId);
+    const input = ctrl.querySelector('[role="combobox"]');
+    let menu = null;
+
+    const close = () => { menu?.remove(); menu = null; input.setAttribute('aria-expanded', 'false'); };
+
+    function open() {
+      close();
+      const query = input.value.trim().toLowerCase();
+      let visible = (serverSide && !query) ? [] : items.filter((item) => item.toLowerCase().includes(query));
+      // Geocoders are literal: "san francisco, ca" matches nothing containing
+      // "California" spelled out, which is exactly what tripped JobFill up.
+      if (serverSide && query && !visible.length) {
+        const city = query.split(',')[0].trim();
+        visible = items.filter((item) => item.toLowerCase().includes(city));
+      }
+      if (!visible.length) return;
+
+      const box = ctrl.getBoundingClientRect();
+      menu = document.createElement('div');
+      menu.className = 'menu';
+      menu.id = menuId;
+      menu.setAttribute('role', 'listbox');
+      menu.style.left = (box.left + window.scrollX) + 'px';
+      menu.style.top = (box.bottom + window.scrollY + 4) + 'px';
+      menu.innerHTML = visible.map((item) => '<div class="opt" role="option">' + item + '</div>').join('');
+      portal.appendChild(menu);           // outside the field, as a portal is
+      input.setAttribute('aria-expanded', 'true');
+
+      menu.addEventListener('mousedown', (event) => {
+        const option = event.target.closest('[role="option"]');
+        if (!option) return;
+        state[key] = option.textContent;
+        ctrl.querySelector('.ph, .val')?.remove();
+        const chosen = document.createElement('span');
+        chosen.className = 'val';
+        chosen.textContent = state[key];
+        ctrl.prepend(chosen);
+        input.value = '';
+        close();
+        log('accepted ' + key + ' = ' + state[key]);
+      });
+    }
+
+    let debounce = null;
+    input.addEventListener('focus', open);
+    // Search boxes answer late, and show the previous query until they do.
+    input.addEventListener('input', () => {
+      if (!serverSide) { open(); return; }
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(open, 250);
+    });
+    input.addEventListener('keydown', (event) => { if (event.key === 'ArrowDown') open(); });
+    input.addEventListener('blur', () => setTimeout(close, 200));
+  }
+
+  combobox('state-ctrl', 'state-menu', 'state',
+    ['California', 'Florida', 'New York', 'Texas', 'Washington'], false);
+
+  combobox('edu-ctrl', 'edu-menu', 'education',
+    ['High School', "Associate's Degree", "Bachelor's Degree", "Master's Degree", 'Doctorate'], false);
+
+  // The first option is the wrong San Francisco: anything that commits the
+  // top suggestion blind puts the applicant in the Philippines.
+  combobox('loc-ctrl', 'loc-menu', 'location',
+    ['San Francisco Caballua, Oaxaca, Mexico', 'San Francisco, Cebu, Philippines',
+     'San Francisco, California, United States', 'San Francisco, Córdoba, Argentina'], true);
+
+  // A school box: the near-miss here is a real university with a similar name.
+  combobox('school-ctrl', 'school-menu', 'school',
+    ['American International College', 'Florida International University', 'International University of Monaco'], true);
+</script>
+</body></html>

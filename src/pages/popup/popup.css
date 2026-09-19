@@ -1,0 +1,172 @@
+body {
+  width: 320px;
+  padding: 14px;
+}
+
+header {
+  margin-bottom: 14px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+header p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counts {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+.counts div {
+  --fill: var(--raise);
+  --r-box: var(--r-md);
+  position: relative;
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  background-color: var(--fill);
+  border-radius: var(--r-box);
+}
+
+.counts div::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--fill), var(--fg) 24%) 0,
+    color-mix(in oklch, var(--fill), var(--fg) 10%) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.counts strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.counts span {
+  font-size: 10px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.status {
+  margin: 0 0 12px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  min-height: 17px;
+  line-height: 1.45;
+}
+
+.buttons {
+  display: flex;
+  gap: 7px;
+}
+
+.buttons .primary { flex: 1; font-size: 12.5px; padding: 0.6rem 0.8rem; }
+.buttons .ghost { font-size: 12.5px; padding: 0.6rem 0.9rem; }
+
+.quick {
+  list-style: none;
+  margin: 13px 0 0;
+  padding: 0;
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.quick li {
+  --fill: var(--raise);
+  --r-box: var(--r-md);
+  position: relative;
+  padding: 9px 10px;
+  background-color: var(--fill);
+  border-radius: var(--r-box);
+}
+
+.quick .q {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.quick .row {
+  display: flex;
+  gap: 6px;
+}
+
+.quick input { font-size: 12px; padding: 0.35rem 0.5rem; }
+
+.quick button {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.35rem 0.6rem;
+  white-space: nowrap;
+  transition: background-color 120ms linear, border-color 120ms linear, color 120ms linear;
+}
+
+.quick button:hover {
+  background-color: var(--program);
+  border-color: var(--program);
+  color: var(--program-fg);
+}
+
+.site { margin-top: 13px; }
+
+.always {
+  --fill: var(--raise);
+  --r-box: var(--r-md);
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background-color: var(--fill);
+  border-radius: var(--r-box);
+  cursor: pointer;
+}
+
+.always input { margin-top: 2px; flex: none; }
+.always .text strong { display: block; font-size: 12.5px; }
+.always .text span { color: var(--fg-muted); font-size: 11.5px; line-height: 1.4; }
+.always.locked { cursor: default; }
+.always.locked input { display: none; }
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}

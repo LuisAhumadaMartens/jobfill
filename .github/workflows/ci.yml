@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build
+      - run: bun test
+
+      - name: Package the extension
+        run: bun run zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jobfill-unpacked
+          path: dist/
+
+  release:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Skip commits that are already released
+        id: guard
+        run: |
+          if [ -n "$(git tag --points-at HEAD)" ]; then
+            echo "This commit is already tagged; nothing to release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Work out the version
+        if: steps.guard.outputs.skip != 'true'
+        id: version
+        run: echo "version=$(bun run scripts/version.ts)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and package
+        if: steps.guard.outputs.skip != 'true'
+        run: bun run scripts/build.ts --zip --version "${{ steps.version.outputs.version }}"
+
+      - name: Publish the release
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cat > notes.md <<EOF
+          Unpacked build of JobFill $VERSION.
+
+          **Install:** download \`jobfill-$VERSION.zip\`, unzip it, open \`chrome://extensions\`, turn on Developer mode and choose **Load unpacked** on the unzipped folder.
+
+          Major and minor are set by hand in \`src/manifest.json\`. The patch is the number of releases since that minor.
+          EOF
+          gh release create "v$VERSION" "jobfill-$VERSION.zip" --title "v$VERSION" --notes-file notes.md

@@ -1,0 +1,52 @@
+import { describe, expect, test } from 'bun:test';
+import { historyIndexOf, toWorkEntries, valueFromHistory } from '../src/lib/answers/history.ts';
+import { extract } from '../src/lib/resume/extract.ts';
+
+const history = toWorkEntries([
+  { title: 'Senior Software Engineer', company: 'Wavelength Data', location: '', current: true, start: { year: 2021, month: 2 }, end: null },
+  { title: 'Software Engineer', company: 'Brightline Systems', location: '', current: false, start: { year: 2018, month: 7 }, end: { year: 2021, month: 1 } }
+]);
+
+describe('which job a repeated field is asking about', () => {
+  test('reads the index out of the field name', () => {
+    expect(historyIndexOf({ name: 'experience[0][title]' })).toBe(0);
+    expect(historyIndexOf({ name: 'experience[1][title]' })).toBe(1);
+    expect(historyIndexOf({ name: 'work_experience_2_company' })).toBe(2);
+    expect(historyIndexOf({ id: 'employment-1-employer' })).toBe(1);
+  });
+
+  test('falls back to a numbered label', () => {
+    expect(historyIndexOf({ label: 'Employer 2' })).toBe(1);
+    expect(historyIndexOf({ label: 'Position 3' })).toBe(2);
+  });
+
+  test('an unnumbered field is the most recent job', () => {
+    expect(historyIndexOf({ name: 'company', label: 'Employer' })).toBe(0);
+  });
+});
+
+describe('serving a form that asks for several jobs', () => {
+  test('each index gets its own role', () => {
+    expect(valueFromHistory({ kind: 'employerName', name: 'experience[0][company]' }, history)).toBe('Wavelength Data');
+    expect(valueFromHistory({ kind: 'employerName', name: 'experience[1][company]' }, history)).toBe('Brightline Systems');
+    expect(valueFromHistory({ kind: 'jobTitle', name: 'experience[1][title]' }, history)).toBe('Software Engineer');
+  });
+
+  test('an index past the end of the history fills nothing', () => {
+    expect(valueFromHistory({ kind: 'employerName', name: 'experience[5][company]' }, history)).toBeNull();
+  });
+
+  test('unrelated fields are left alone', () => {
+    expect(valueFromHistory({ kind: 'email', name: 'email' }, history)).toBeNull();
+    expect(valueFromHistory({ kind: null, name: 'whatever' }, history)).toBeNull();
+  });
+});
+
+test('the resume reader fills the history, not just the current job', async () => {
+  const text = await Bun.file(new URL('./fixtures/resume.txt', import.meta.url)).text();
+  const entries = toWorkEntries(extract(text).experience);
+
+  expect(entries).toHaveLength(2);
+  expect(entries[0]).toMatchObject({ company: 'Wavelength Data', current: true, start: '02/2021', end: '' });
+  expect(entries[1]).toMatchObject({ company: 'Brightline Systems', current: false, end: '01/2021' });
+});

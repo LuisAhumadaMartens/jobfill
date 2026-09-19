@@ -1,0 +1,25 @@
+Ada Okonkwo
+Austin, TX | ada-okonkwo.dev | github.com/adaokonkwo | linkedin.com/in/adaokonkwo | ada@okonkwo.dev |
++1 (512) 555-0184 | U.S. Citizen
+
+SUMMARY
+Backend engineer who likes data pipelines and boring, dependable deploys.
+
+SKILLS
+Languages: Go, Python, TypeScript, SQL
+Infrastructure: Kubernetes, Terraform, PostgreSQL, Kafka, AWS
+
+EXPERIENCE
+Senior Software Engineer | Wavelength Data | Feb 2021 – Present
+Streaming analytics for logistics companies.
+• Rebuilt the ingestion path onto Kafka, cutting p99 event lag from 40s to under 2s.
+• Led the migration of 30 services from EC2 to EKS with no customer-visible downtime.
+Software Engineer | Brightline Systems | Jul 2018 – Jan 2021
+• Built the billing reconciliation service that closed a six-figure revenue leak.
+
+PROJECTS
+Tidewater | Open-source Postgres change-data-capture tool | Go, PostgreSQL | Mar 2023
+• 1,800 stars; used in production by four companies.
+
+EDUCATION
+B.S. in Computer Engineering | University of Texas at Austin | GPA: 3.8 | May 2018
