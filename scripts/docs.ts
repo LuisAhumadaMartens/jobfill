@@ -7,32 +7,50 @@ const ROOT = dirname(import.meta.dir);
 const DOCS = join(ROOT, 'docs');
 
 const SITE = `
-  main { max-width: 820px; margin: 0 auto; padding: 56px 22px 110px; }
-  nav { display: flex; gap: 18px; align-items: center; margin-bottom: 44px; font-size: 14px; }
-  nav .brand { font-weight: 900; font-size: 17px; letter-spacing: -0.02em; margin-right: auto; }
-  nav a { text-decoration: none; color: var(--fg-muted); font-weight: 700; }
-  nav a:hover { color: var(--fg); }
-  h1 { font-size: 42px; letter-spacing: -0.04em; margin: 0 0 14px; line-height: 1.05; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-faint); margin: 52px 0 16px; }
-  h3 { font-size: 17px; margin: 30px 0 8px; letter-spacing: -0.01em; }
-  p { color: var(--fg-muted); line-height: 1.7; max-width: 68ch; }
-  .lede { font-size: 18px; color: var(--fg-muted); line-height: 1.6; max-width: 62ch; }
-  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 30px 0 8px; }
+  main { max-width: 900px; margin: 0 auto; padding: 44px 22px 90px; }
+
+  nav { display: flex; gap: 20px; align-items: center; margin-bottom: 52px; }
+  nav .brand { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-right: auto; text-transform: uppercase; }
+  nav a { text-decoration: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
+          letter-spacing: 0.06em; color: var(--fg-muted); }
+  nav a:hover { color: var(--program); }
+
+  h1 { font-size: 46px; line-height: 1.05; letter-spacing: 0.01em; margin: 0 0 18px; text-transform: uppercase; }
+  h2 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
+       color: var(--program); margin: 56px 0 18px; font-weight: 400;
+       border-left: 2px solid var(--program); padding-left: 12px; }
+  h3 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+
+  p { color: var(--fg); line-height: 1.65; max-width: 66ch; margin: 0 0 14px; }
+  .lede { font-size: 19px; color: var(--fg-muted); max-width: 58ch; }
+
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 10px; }
   .cta a { text-decoration: none; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-  .card { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; }
-  .card h3 { margin: 0 0 7px; font-size: 15px; }
-  .card p { margin: 0; font-size: 14px; }
-  ul { color: var(--fg-muted); line-height: 1.8; max-width: 68ch; }
-  li strong { color: var(--fg); }
-  .boards { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
-  .boards span { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-pill);
-                 padding: 4px 11px; font-size: 12.5px; color: var(--fg-muted); }
-  footer { margin-top: 70px; padding-top: 24px; border-top: 1px solid var(--line);
-           color: var(--fg-faint); font-size: 13px; line-height: 1.8; }
-  code { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-sm);
-         padding: 1px 6px; font-size: 0.9em; }
+  .cta svg { width: 15px; height: 15px; flex: none; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px;
+           background: var(--line); border: 1px solid var(--line); }
+  .card { background: var(--ground); padding: 18px 20px; }
+  .card p { margin: 0; font-size: 14px; color: var(--fg-muted); }
+
+  ul { color: var(--fg); line-height: 1.8; max-width: 66ch; padding-left: 18px; }
+  li strong { color: var(--fg-bright); }
+
+  .boards { display: flex; flex-wrap: wrap; gap: 6px; }
+  .boards span { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+                 border: 1px solid var(--line); padding: 3px 9px; color: var(--fg-muted); }
+
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+           color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px;
+           text-transform: uppercase; letter-spacing: 0.05em; }
+
+  code { font-family: var(--font-mono); background: var(--sink); border: 1px solid var(--line); padding: 1px 6px; font-size: 0.92em; }
 `;
+
+const GITHUB_MARK = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
+
+const CHROME_MARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.9 4.02L3.5 5.6A10 10 0 0 1 12 2Zm-9.5 5.35 4.32 7.48A5 5 0 0 0 12 17c.2 0 .4-.01.6-.04l-3.6 6.23A10 10 0 0 1 2 12c0-1.66.4-3.22 1.1-4.6l-.6-.05ZM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm9.3.5A10 10 0 0 1 12 22h-.3l4.35-7.53A5 5 0 0 0 16.5 9h4.8Z"/></svg>';
+
 
 const ORIGIN = 'https://jobfill.app';
 
@@ -74,9 +92,7 @@ ${noindex
     <span class="brand">JobFill</span>
     <a href="/">Home</a>
     <a href="/privacy.html">Privacy</a>
-    <a href="/ui">Design</a>
     <a href="https://dex.jobfill.app">Dex</a>
-    <a href="https://github.com/LuisAhumadaMartens/jobfill">GitHub</a>
   </nav>
 ${body}
   <footer>
@@ -94,50 +110,43 @@ const home = shell({
   path: '/',
   body: `  <h1>Stop retyping the same answers.</h1>
   <p class="lede">
-    JobFill fills in job applications from answers you teach it once. Paste your resume in at
-    the start, and the name, email and links half of every application fills itself. Everything
-    else you answer once, in the page, and it remembers both the answer and the way that site
-    worded the question.
+    JobFill fills job applications from answers you teach it once. Your resume is read in the
+    browser and never uploaded.
   </p>
 
   <div class="cta">
-    <a class="primary" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest">Download the latest build</a>
-    <a class="ghost" href="https://github.com/LuisAhumadaMartens/jobfill">Read the source</a>
+    <a class="primary" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest">${CHROME_MARK} Download</a>
+    <a class="ghost" href="https://github.com/LuisAhumadaMartens/jobfill">${GITHUB_MARK} Source</a>
   </div>
-  <p style="font-size:13.5px">Free, and it stays on your machine. No account, and nothing to pay for.</p>
 
   <h2>What it does</h2>
   <div class="cards">
     <div class="card">
       <h3>Reads your resume here</h3>
-      <p>PDF, DOCX or plain text, parsed inside your browser. The file is never uploaded anywhere.</p>
+      <p>PDF, DOCX or text, parsed in your browser.</p>
     </div>
     <div class="card">
       <h3>Knows the standard questions</h3>
-      <p>About 45 of them by shape, so a job board it has never seen still fills correctly the first time.</p>
+      <p>About 45 by shape, so a new board still fills on the first visit.</p>
     </div>
     <div class="card">
-      <h3>Learns the rest as you go</h3>
-      <p>Answer once in the panel and it is saved, along with that site's exact wording.</p>
+      <h3>Learns the rest</h3>
+      <p>Answer once in the panel and it keeps the answer and the wording.</p>
     </div>
     <div class="card">
-      <h3>Asks before it keeps anything</h3>
-      <p>When you submit, it offers what you typed and you tick what is worth remembering.</p>
+      <h3>Asks before it keeps</h3>
+      <p>On submit it offers what you typed. You tick what to remember.</p>
     </div>
   </div>
 
   <h2>Where it runs</h2>
-  <p>
-    Nothing happens on a page until the site is one of the job boards it supports, or you turn it
-    on there yourself. It is off everywhere else, by default and by design.
-  </p>
+  <p>Only on the boards below, or a site you switch it on yourself. Nowhere else.</p>
   <div class="boards">${ATS_HOSTS.map((host) => `<span>${host}</span>`).join('')}</div>
 
-  <h2>Install it</h2>
+  <h2>Install</h2>
   <p>
-    Download the zip from the latest release, unzip it, open <code>chrome://extensions</code>,
-    turn on Developer mode, and choose <strong>Load unpacked</strong> on the unzipped folder.
-    The setup page opens on first install. Start on the Resume tab.
+    Unzip the latest release, open <code>chrome://extensions</code>, turn on Developer mode and
+    choose <strong>Load unpacked</strong>.
   </p>`
 });
 
@@ -147,9 +156,7 @@ const privacy = shell({
   path: '/privacy.html',
   body: `  <h1>Privacy</h1>
   <p class="lede">
-    JobFill holds a resume, a profile and a list of answers. All of it stays in this browser
-    profile, on your machine. There is no account, no server it reports to, and no network
-    request it makes on its own.
+    Your resume, profile and answers stay in this browser. No account, no server.
   </p>
 
   <h2>What is stored, and where</h2>
@@ -159,16 +166,13 @@ const privacy = shell({
     <li><strong>Your answers</strong>, and the wordings each site used for the questions they answer.</li>
     <li><strong>Your settings</strong>, including which sites JobFill is allowed to run on.</li>
   </ul>
-  <p>
-    None of it is transmitted. Uninstalling the extension removes all of it. You can erase it at
-    any time from the Settings tab, and export it as a JSON file you keep.
-  </p>
+  <p>Uninstalling removes it. Settings lets you erase or export it.</p>
 
   <h2>The one thing that can leave</h2>
   <p>
-    When JobFill cannot answer a question, the question is worth keeping even though your answer
-    is not: it is the same wording every applicant to that job board sees. Those collect on the
-    <strong>Contribute</strong> tab, in your browser, where you can read every one.
+    A question JobFill cannot answer is worth keeping even though your answer is not: it is the
+    wording every applicant to that board sees. They collect on the <strong>Contribute</strong>
+    tab where you can read them.
   </p>
   <p>
     <strong>Nothing can be sent until you allow it once.</strong> Reaching the network is an
@@ -199,9 +203,8 @@ const privacy = shell({
     <li>Questions about race, gender, disability, veteran status, sexual orientation, religion, marital status or age</li>
   </ul>
   <p>
-    A report carries a random token made fresh for that one send and stored nowhere. It exists so
-    separate reports can be counted, not so people can be. Two reports cannot be linked to one
-    person, because there is nothing in them to link.
+    A report carries a token made fresh for that send and stored nowhere, so reports can be
+    counted but not linked to a person.
   </p>
 
   <h2>What happens to a sent question</h2>
@@ -213,9 +216,8 @@ const privacy = shell({
 
   <h2>No analytics, ever</h2>
   <p>
-    No analytics, no tracking, no advertising identifiers, no remote code, and nothing sold or
-    shared with anybody. JobFill contains no third-party code that phones home. The PDF reader and
-    the fonts are bundled inside the extension.
+    No analytics, no tracking, no advertising identifiers, no remote code, nothing sold. The PDF
+    reader and the fonts ship inside the extension.
   </p>
 
   <h2>Children</h2>
@@ -276,13 +278,8 @@ const ui = shell({
   extra: UI_STYLE,
   body: `  <h1>Design</h1>
   <p class="lede">
-    Everything JobFill draws comes from one place. This page renders it from that same source,
-    so what you see here is what ships: if a value changes, this changes with it, and if it drifts
-    the drift is visible.
-  </p>
-  <p class="note">
-    Colours are read out of the live stylesheet rather than written down again, which is the only
-    way a page like this can be trusted.
+    Rendered from the same source the extension and the dex ship, so this is what ships.
+    Colour values are read from the live stylesheet rather than written down again.
   </p>
 
   <h2>Colour</h2>
@@ -297,16 +294,16 @@ const ui = shell({
       </div>
     </div>`).join('')}
   </div>
-  <p class="note">Every one of these has a light-mode value too. Change your system theme and this page follows.</p>
+  <p class="note">Each has a light-mode value. Change your system theme and this follows.</p>
 
   <h2>Type</h2>
   <div class="type">
-    <div style="font-size:42px;letter-spacing:-0.04em;font-weight:900">Lato Black, 42</div>
-    <div style="font-size:26px;letter-spacing:-0.02em;font-weight:700">Lato Bold, 26</div>
-    <div style="font-size:17px">Lato Regular, 17</div>
-    <div style="font-size:14px;color:var(--fg-muted)">Lato Regular, 14, muted</div>
-    <div style="font-size:12px;color:var(--fg-faint);text-transform:uppercase;letter-spacing:0.07em;font-weight:700">Lato Bold, 12, a label</div>
-    <div style="font-size:15px;font-style:italic">Lato Italic, 15</div>
+    <div style="font-size:42px;font-weight:700;text-transform:uppercase">Rajdhani Bold, 42</div>
+    <div style="font-size:26px;font-weight:600">Rajdhani Semibold, 26</div>
+    <div style="font-size:17px">Rajdhani Regular, 17</div>
+    <div style="font-size:14px;color:var(--fg-muted)">Rajdhani Regular, 14, muted</div>
+    <div class="label">Share Tech Mono, 11, a label</div>
+    <div style="font-family:var(--font-mono);font-size:14px">Share Tech Mono, 14</div>
   </div>
 
   <h2>Buttons</h2>

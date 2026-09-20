@@ -28,7 +28,7 @@ describe('the panel keeps its own layout, not just the shared tokens', () => {
   });
 
   test('it asks for the vendored font by the name the FontFace API registers', async () => {
-    expect(await panelStylesheet()).toContain("'JobFill Lato'");
+    expect(await panelStylesheet()).toContain("'JobFill Rajdhani'");
   });
 
   test('every custom property it uses is one it defines', async () => {

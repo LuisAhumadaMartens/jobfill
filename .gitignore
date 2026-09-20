@@ -8,3 +8,4 @@ assets/icons/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+TODO.local.md

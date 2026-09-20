@@ -24,7 +24,7 @@
   letter-spacing: 0.02em;
   color: var(--fg-muted);
   background: color-mix(in oklch, var(--fg), transparent 92%);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   padding: 4px 12px;
   opacity: 0;
   transform: translateY(-4px);
@@ -43,13 +43,15 @@
 }
 
 .tab {
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
-  color: var(--fg-faint);
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   padding: 7px 14px;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   transition: background-color 120ms linear, color 120ms linear;
 }
 
@@ -57,6 +59,7 @@
 
 .tab[aria-selected='true'] {
   background: var(--program);
+  border-color: var(--program);
   color: var(--program-fg);
   box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.4);
 }
@@ -68,15 +71,19 @@ main {
 }
 
 .intro { margin-bottom: 22px; }
-.intro h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: -0.02em; }
+.intro h2 { margin: 0 0 6px; font-size: 24px; text-transform: uppercase; letter-spacing: 0.01em; }
 .intro p { margin: 0; color: var(--fg-muted); max-width: 62ch; line-height: 1.6; }
 
 h3 {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--fg-faint);
-  margin: 32px 0 12px;
+  letter-spacing: 0.1em;
+  color: var(--program);
+  border-left: 2px solid var(--program);
+  padding-left: 10px;
+  margin: 34px 0 14px;
 }
 
 h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-weight: 700; }
@@ -85,7 +92,6 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   --fill: var(--raise);
   position: relative;
   border: 1px dashed var(--line-2);
-  border-radius: var(--r-xl);
   background-color: var(--fill);
   padding: 42px 20px;
   text-align: center;
@@ -116,30 +122,9 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   --fill: var(--raise);
   position: relative;
   background-color: var(--fill);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
 }
 
-.result .card::before,
-.setting::before,
-.answer::before,
-.entry::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklch, var(--fill), var(--fg) 24%) 0,
-    color-mix(in oklch, var(--fill), var(--fg) 10%) 1.25rem,
-    color-mix(in oklch, var(--fill), var(--fg) 10%) 100%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
 
 .result .card { padding: 16px 18px; margin-bottom: 12px; }
 .result h4 { margin: 0 0 12px; font-size: 14px; }
@@ -185,7 +170,7 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   background: color-mix(in oklch, var(--program), transparent 82%);
   color: var(--program);
   padding: 3px 9px;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -198,7 +183,7 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
 .alias {
   background: var(--sink);
   border: 1px solid var(--line);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   padding: 4px 10px;
   font-size: 12px;
   display: inline-flex;
@@ -279,7 +264,7 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
 
 .role {
   border: 1px solid var(--line-2);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   background: transparent;
   color: var(--fg-faint);
   font-size: 10.5px;
@@ -319,7 +304,7 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
 
 .hosts li {
   border: 1px solid var(--line);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   padding: 5px 12px;
   font-size: 12.5px;
   display: flex;
@@ -337,8 +322,7 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   padding: 26px;
   text-align: center;
   border: 1px dashed var(--line-2);
-  border-radius: var(--r-lg);
-}
+  }
 
 .builtin { margin-top: 18px; }
 .builtin summary { cursor: pointer; color: var(--fg-muted); font-size: 12.5px; margin-bottom: 10px; }
@@ -353,7 +337,6 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   align-items: start;
   column-gap: 10px;
   background-color: var(--fill);
-  border-radius: var(--r-md);
   padding: 11px 12px;
 }
 
@@ -362,13 +345,13 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
 .record button {
   margin-top: 4px;
   border: 1px solid var(--line-2); background: transparent; color: var(--fg-faint);
-  border-radius: var(--r-pill); font-size: 11.5px; padding: 4px 11px;
+  border-radius: 0; font-size: 11.5px; padding: 4px 11px;
 }
 .record button:hover { border-color: var(--danger); color: var(--danger); }
 .records .add {
   align-self: flex-start;
   border: 1px dashed var(--line-2); background: transparent; color: var(--fg-muted);
-  border-radius: var(--r-pill); font-size: 12.5px; font-weight: 700; padding: 7px 14px;
+  border-radius: 0; font-size: 12.5px; font-weight: 700; padding: 7px 14px;
 }
 .records .add:hover { border-color: var(--program); color: var(--program); }
 
@@ -378,7 +361,6 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   --fill: var(--raise);
   position: relative;
   background-color: var(--fill);
-  border-radius: var(--r-lg);
   padding: 16px 18px;
 }
 

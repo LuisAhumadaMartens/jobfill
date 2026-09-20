@@ -17,8 +17,9 @@
   z-index: 2147483000;
   will-change: transform;
 
-  font-family: 'JobFill Lato', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
+  font-family: 'JobFill Rajdhani', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JobFill Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -57,7 +58,7 @@
   gap: 9px;
   padding: 10px 16px;
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   background-color: var(--program);
   color: var(--program-fg);
   font-weight: 700;
@@ -75,7 +76,7 @@
 .pill .count {
   background: color-mix(in oklch, var(--program-fg), transparent 82%);
   color: var(--program-fg);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   padding: 2px 8px;
   font-size: 11px;
 }
@@ -90,7 +91,6 @@
   display: flex;
   flex-direction: column;
   background: var(--ground);
-  border-radius: var(--r-xl);
   box-shadow: 0 24px 60px oklch(0 0 0 / 0.45);
   overflow: hidden;
 }
@@ -143,7 +143,6 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  border-radius: var(--r-sm);
   font-size: 13px;
   transition: background-color 120ms linear, color 120ms linear;
 }
@@ -161,7 +160,7 @@ button.primary {
   position: relative;
   flex: 1;
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   background-color: var(--program);
   color: var(--program-fg);
   font-weight: 700;
@@ -177,7 +176,7 @@ button.primary:disabled { opacity: 0.45; cursor: default; }
 
 button.ghost {
   border: 1px solid var(--line-2);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   background: transparent;
   color: var(--fg);
   font-weight: 700;
@@ -201,7 +200,7 @@ button.ghost:hover { background: var(--program); border-color: var(--program); c
   font-size: 11.5px;
   font-weight: 700;
   padding: 6px 11px;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   transition: background-color 120ms linear, color 120ms linear;
 }
 
@@ -231,7 +230,6 @@ button.ghost:hover { background: var(--program); border-color: var(--program); c
 .row {
   --fill: var(--raise);
   position: relative;
-  border-radius: var(--r-md);
   padding: 10px 12px;
   background-color: var(--fill);
   transition: background-color 160ms var(--ease);
@@ -282,7 +280,7 @@ button.ghost:hover { background: var(--program); border-color: var(--program); c
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 3px 8px;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   white-space: nowrap;
   flex: none;
 }
@@ -325,7 +323,6 @@ button.ghost:hover { background: var(--program); border-color: var(--program); c
   color: var(--fg);
   background: var(--sink);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
   padding: 7px 9px;
 }
 
@@ -337,7 +334,7 @@ button.ghost:hover { background: var(--program); border-color: var(--program); c
   border: 1px solid var(--line-2);
   background: transparent;
   color: var(--fg);
-  border-radius: var(--r-pill);
+  border-radius: 0;
   font-size: 11.5px;
   font-weight: 700;
   padding: 6px 11px;

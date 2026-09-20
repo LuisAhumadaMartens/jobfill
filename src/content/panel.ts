@@ -1,4 +1,4 @@
-import { FONTS, PANEL_FONT, PANEL_STYLESHEET } from '../shared/paths.ts';
+import { FONTS, PANEL_FONT, PANEL_MONO, PANEL_MONO_FONTS, PANEL_STYLESHEET } from '../shared/paths.ts';
 import type { Answer, FieldPlan, PanelCorner, PendingReview } from '../shared/types.ts';
 
 const MARGIN = 16;
@@ -16,8 +16,13 @@ async function loadPanelFont(): Promise<void> {
   if (fontsRequested || typeof FontFace !== 'function') return;
   fontsRequested = true;
   try {
-    await Promise.all(FONTS.map(async ({ file, weight, style }) => {
-      const face = new FontFace(PANEL_FONT, `url(${chrome.runtime.getURL(file)})`, {
+    const wanted = [
+      ...FONTS.map((entry) => ({ ...entry, family: PANEL_FONT })),
+      ...PANEL_MONO_FONTS.map((entry) => ({ ...entry, family: PANEL_MONO }))
+    ];
+
+    await Promise.all(wanted.map(async ({ family, file, weight, style }) => {
+      const face = new FontFace(family, `url(${chrome.runtime.getURL(file)})`, {
         weight: String(weight),
         style,
         display: 'swap'

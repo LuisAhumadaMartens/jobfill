@@ -26,25 +26,34 @@ function escapeHtml(value: string): string {
 const STYLE = `
   ${page()}
 
-  main { max-width: 940px; margin: 0 auto; padding: 48px 22px 100px; }
-  h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0 0 10px; }
-  .lede { color: var(--fg-muted); line-height: 1.65; max-width: 66ch; margin: 0 0 8px; }
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-faint); margin: 44px 0 14px; }
-  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stat { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; }
-  .stat b { display: block; font-size: 26px; letter-spacing: -0.02em; }
-  .stat span { color: var(--fg-faint); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .q { font-weight: 600; }
-  .opts { color: var(--fg-faint); font-size: 12px; margin-top: 5px; }
-  .tag { display: inline-block; background: color-mix(in oklch, var(--program), transparent 84%); color: var(--program);
-         border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-  .empty { border: 1px dashed var(--line); border-radius: var(--r-lg); padding: 34px; text-align: center; color: var(--fg-faint); }
-  .rules { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; }
-  .rules ul { margin: 0; padding-left: 20px; line-height: 1.8; color: var(--fg-muted); }
-  .rules strong { color: var(--fg); }
-  .note { color: var(--fg-faint); font-size: 13px; }
-  code { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 1px 6px; font-size: 0.9em; }
-  footer { margin-top: 44px; color: var(--fg-faint); font-size: 12.5px; line-height: 1.7; }
+  main { max-width: 980px; margin: 0 auto; padding: 44px 22px 90px; }
+  h1 { font-size: 34px; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .lede { color: var(--fg-muted); line-height: 1.65; max-width: 66ch; margin: 0 0 12px; }
+  h2 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
+       color: var(--program); margin: 48px 0 16px; font-weight: 400;
+       border-left: 2px solid var(--program); padding-left: 12px; }
+
+  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
+            background: var(--line); border: 1px solid var(--line); }
+  .stat { background: var(--ground); padding: 16px 18px; }
+  .stat b { display: block; font-size: 28px; color: var(--fg-bright); }
+  .stat span { font-family: var(--font-mono); color: var(--fg-faint); font-size: 11px;
+               text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .q { font-weight: 600; color: var(--fg-bright); }
+  .opts { color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px; margin-top: 4px; }
+  .tag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+         border: 1px solid var(--line); padding: 2px 8px; color: var(--program); white-space: nowrap; }
+  .empty { border: 1px solid var(--line); padding: 32px; text-align: center; color: var(--fg-faint);
+           font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .rules { border: 1px solid var(--line); padding: 18px 22px; }
+  .rules ul { margin: 0; padding-left: 18px; line-height: 1.8; color: var(--fg-muted); }
+  .rules strong { color: var(--fg-bright); }
+  .note { color: var(--fg-faint); font-size: 13px; max-width: 66ch; }
+  code { font-family: var(--font-mono); background: var(--sink); border: 1px solid var(--line); padding: 1px 6px; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
+           color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px;
+           text-transform: uppercase; letter-spacing: 0.05em; }
 `;
 
 export function dashboard(view: View): string {
@@ -79,13 +88,8 @@ export function dashboard(view: View): string {
 <main>
   <h1>JobFill Dex</h1>
   <p class="lede">
-    An open map of how applicant tracking systems word their application questions. Every
-    row here is text that any applicant opening that form already sees. Nobody's answers
-    are here, and there is nothing in this dataset that could say who filled anything in.
-  </p>
-  <p class="lede">
-    It is built from reports that <a href="https://github.com/LuisAhumadaMartens/jobfill">JobFill</a>
-    users choose to send, one application at a time, after reading exactly what is in them.
+    How applicant tracking systems word their questions. Every row is text any applicant
+    to that form already sees. No answers, and nothing that could identify anyone.
   </p>
 
   <h2>What is here</h2>
@@ -99,13 +103,13 @@ export function dashboard(view: View): string {
   <h2>What is collected, and what never is</h2>
   <div class="rules">
     <ul>
-      <li><strong>Collected:</strong> the job board, the question, the options it offered, the kind of control, and whether JobFill could answer it.</li>
-      <li><strong>Never collected:</strong> your answers, your profile, your resume, or anything you typed.</li>
-      <li><strong>Never collected:</strong> the page address, the company, or the role. Only which of the ${ATS_HOSTS.length} boards it was.</li>
-      <li><strong>Never collected:</strong> any identifier. There is no account and no install id, so nothing here links two reports to one person.</li>
-      <li><strong>Never collected:</strong> questions about race, gender, disability, veteran status, orientation, religion or age. Those are refused before anything is queued.</li>
-      <li><strong>Held back:</strong> a question stays private until <strong>${view.threshold} separate reports</strong> have seen it, which is how a question one company wrote for one person never reaches this page.</li>
-      <li><strong>Reviewed by a person:</strong> reaching that count only puts a question in a queue. Nothing appears here until it has been read and approved by hand, because an endpoint anybody can post to is an endpoint anybody can post anything to.</li>
+      <li><strong>Collected:</strong> the board, the question, the options it offered, the control, and whether JobFill could answer it.</li>
+      <li><strong>Never:</strong> your answers, profile, resume, or anything you typed.</li>
+      <li><strong>Never:</strong> the page address, company or role. Only which of the ${ATS_HOSTS.length} boards.</li>
+      <li><strong>Never:</strong> any identifier. Nothing here links two reports to one person.</li>
+      <li><strong>Never:</strong> race, gender, disability, veteran status, orientation, religion or age.</li>
+      <li><strong>Held:</strong> until <strong>${view.threshold} separate reports</strong> have seen it, so a question one company wrote for one person never lands here.</li>
+      <li><strong>Reviewed:</strong> reaching that count only queues it. A person approves everything, because an endpoint anyone can post to is an endpoint anyone can post anything to.</li>
     </ul>
   </div>
 

@@ -181,7 +181,7 @@ describe('the ingest endpoint', () => {
   test('the dashboard renders and says what is never collected', async () => {
     const page = await (await get('/')).text();
     expect(page).toContain('JobFill Dex');
-    expect(page).toContain('Never collected');
+    expect(page).toContain('Never:');
   });
 });
 
