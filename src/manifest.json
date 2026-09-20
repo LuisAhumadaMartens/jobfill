@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "JobFill: Job Application Autofill",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Fills job applications from answers you teach it once. Reads your resume in the browser; your answers never leave your machine.",
   "minimum_chrome_version": "114",
   "icons": {
