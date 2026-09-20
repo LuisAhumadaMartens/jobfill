@@ -99,7 +99,7 @@ Choosing the *option* is a second problem. Your answer is `B.S.`; the dropdown o
 ## Privacy
 
 Your resume, profile and answers stay in `chrome.storage.local`. No analytics, no telemetry, no
-remote code.
+remote code. This section is the policy; there is no separate page.
 
 When JobFill cannot answer a question, the question is worth keeping even though your answer is
 not: it is the wording every applicant to that board sees. Those collect on the **Contribute**

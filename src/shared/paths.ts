@@ -19,4 +19,4 @@ export const PANEL_MONO = 'JobFill Share Tech Mono';
 
 export const BADGE_READY = '#0574f5';
 
-export const BADGE_ATTENTION = '#9a6700';
+export const BADGE_ATTENTION = '#e2b714';

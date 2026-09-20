@@ -475,11 +475,124 @@ footer {
   letter-spacing: 0.06em;
 }
 
-  nav { display: flex; gap: 20px; align-items: center; margin-bottom: 52px; }
-  nav .brand { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-right: auto; text-transform: uppercase; }
-  nav a { text-decoration: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
-          letter-spacing: 0.06em; color: var(--fg-muted); }
-  nav a:hover { color: var(--program); }
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 40;
+  background: color-mix(in oklch, var(--ground), transparent 20%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid color-mix(in oklch, var(--fg), transparent 90%);
+}
+
+.site-header .inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 22px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  color: var(--fg-bright);
+  transition: color 400ms var(--ease);
+}
+
+.brand:hover { color: var(--program); }
+.brand .mark { width: 26px; height: 26px; flex: none; }
+
+.brand span {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.site-nav { display: flex; align-items: baseline; gap: 26px; }
+
+.site-nav a {
+  position: relative;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  padding-bottom: 4px;
+  transition: color 160ms var(--ease);
+}
+
+.site-nav a:hover { color: var(--program); }
+
+.site-nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--program);
+  transition: width 300ms var(--ease);
+}
+
+.site-nav a:hover::after { width: 100%; }
+
+.site-footer {
+  position: relative;
+  margin-top: 72px;
+  border-top: 1px solid color-mix(in oklch, var(--fg), transparent 90%);
+  background: color-mix(in oklch, var(--ground), transparent 10%);
+}
+
+.site-footer .inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-footer p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+
+.site-footer .links { display: flex; gap: 16px; align-items: center; }
+
+.site-footer .links a {
+  color: var(--fg-faint);
+  display: inline-flex;
+  transition: color 160ms var(--ease);
+}
+
+.site-footer .links a:hover { color: var(--program); }
+.site-footer .links svg { width: 17px; height: 17px; }
+
+.site-footer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  opacity: 0.5;
+  background: linear-gradient(to right, var(--ground), var(--program), var(--ground));
+}
+
+body { padding-top: 72px; }
 
   h1 { font-size: 46px; line-height: 1.05; margin-bottom: 18px; }
   .lede { font-size: 19px; max-width: 58ch; }
@@ -519,13 +632,16 @@ footer {
 </style>
 </head>
 <body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 1 1" fill="none" stroke="currentColor" stroke-width="0.115" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M0.25 0.52 L0.42 0.69 L0.76 0.31"/></svg><span>JobFill</span></a>
+    <nav class="site-nav">
+      <a href="https://dex.jobfill.app">Dex</a>
+      <a href="https://github.com/LuisAhumadaMartens/jobfill">Source</a>
+    </nav>
+  </div>
+</header>
 <main>
-  <nav>
-    <span class="brand">JobFill</span>
-    <a href="/">Home</a>
-    <a href="/privacy.html">Privacy</a>
-    <a href="https://dex.jobfill.app">Dex</a>
-  </nav>
   <h1>Design</h1>
   <p class="lede">
     Rendered from the same source the extension and the dex ship, so this is what ships.
@@ -740,10 +856,12 @@ footer {
         .getPropertyValue(node.dataset.token).trim();
     }
   </script>
-  <footer>
-    JobFill is free for personal use under <a href="https://github.com/LuisAhumadaMartens/jobfill/blob/main/LICENSE.md">PolyForm Strict 1.0.0</a>.
-    Built by <a href="https://github.com/LuisAhumadaMartens">Luis Ahumada</a>.
-  </footer>
 </main>
+<footer class="site-footer">
+  <div class="inner">
+    <p>&copy; 2026 Luis Ahumada.</p>
+    <div class="links"><a href="https://github.com/LuisAhumadaMartens/jobfill" aria-label="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a><a href="https://ahumada.dev" aria-label="Luis Ahumada"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 3 20h5l4-8 4 8h5L12 2Z"/></svg></a></div>
+  </div>
+</footer>
 </body>
 </html>

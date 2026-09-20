@@ -1,18 +1,12 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { BACKDROP, LAYOUT, page } from '../design/index.ts';
+import { BACKDROP, LAYOUT, SHELL, footer, header, page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
 
 const ROOT = dirname(import.meta.dir);
 const DOCS = join(ROOT, 'docs');
 
 const SITE = `
-  nav { display: flex; gap: 20px; align-items: center; margin-bottom: 52px; }
-  nav .brand { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-right: auto; text-transform: uppercase; }
-  nav a { text-decoration: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
-          letter-spacing: 0.06em; color: var(--fg-muted); }
-  nav a:hover { color: var(--program); }
-
   h1 { font-size: 46px; line-height: 1.05; margin-bottom: 18px; }
   .lede { font-size: 19px; max-width: 58ch; }
 
@@ -34,6 +28,8 @@ const SITE = `
 `;
 
 const GITHUB_MARK = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
+
+const SITE_MARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 3 20h5l4-8 4 8h5L12 2Z"/></svg>';
 
 const CHROME_MARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.9 4.02L3.5 5.6A10 10 0 0 1 12 2Zm-9.5 5.35 4.32 7.48A5 5 0 0 0 12 17c.2 0 .4-.01.6-.04l-3.6 6.23A10 10 0 0 1 2 12c0-1.66.4-3.22 1.1-4.6l-.6-.05ZM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm9.3.5A10 10 0 0 1 12 22h-.3l4.35-7.53A5 5 0 0 0 16.5 9h4.8Z"/></svg>';
 
@@ -70,22 +66,17 @@ ${noindex
 <meta name="twitter:title" content="${title}" />
 <meta name="twitter:description" content="${description}" />`}
 <meta name="color-scheme" content="dark light" />
-<style>${page()}${BACKDROP}${LAYOUT}${SITE}${extra}</style>
+<style>${page()}${BACKDROP}${LAYOUT}${SHELL}${SITE}${extra}</style>
 </head>
 <body>
+${header([{ href: 'https://dex.jobfill.app', label: 'Dex' }, { href: 'https://github.com/LuisAhumadaMartens/jobfill', label: 'Source' }])}
 <main>
-  <nav>
-    <span class="brand">JobFill</span>
-    <a href="/">Home</a>
-    <a href="/privacy.html">Privacy</a>
-    <a href="https://dex.jobfill.app">Dex</a>
-  </nav>
 ${body}
-  <footer>
-    JobFill is free for personal use under <a href="https://github.com/LuisAhumadaMartens/jobfill/blob/main/LICENSE.md">PolyForm Strict 1.0.0</a>.
-    Built by <a href="https://github.com/LuisAhumadaMartens">Luis Ahumada</a>.
-  </footer>
 </main>
+${footer([
+  `<a href="https://github.com/LuisAhumadaMartens/jobfill" aria-label="GitHub">${GITHUB_MARK}</a>`,
+  `<a href="https://ahumada.dev" aria-label="Luis Ahumada">${SITE_MARK}</a>`
+])}
 </body>
 </html>`;
 }
@@ -135,88 +126,6 @@ const home = shell({
     choose <strong>Load unpacked</strong>.
   </p>`
 });
-
-const privacy = shell({
-  title: 'JobFill privacy',
-  description: 'What JobFill stores, where it stores it, and the one thing that ever leaves your machine.',
-  path: '/privacy.html',
-  body: `  <h1>Privacy</h1>
-  <p class="lede">
-    Your resume, profile and answers stay in this browser. No account, no server.
-  </p>
-
-  <h2>What is stored, and where</h2>
-  <ul>
-    <li><strong>Your resume file and its text</strong>, in <code>chrome.storage.local</code> on this computer.</li>
-    <li><strong>Your profile</strong>: name, email, phone, address, links, work history, education, skills, references, languages and certifications.</li>
-    <li><strong>Your answers</strong>, and the wordings each site used for the questions they answer.</li>
-    <li><strong>Your settings</strong>, including which sites JobFill is allowed to run on.</li>
-  </ul>
-  <p>Uninstalling removes it. Settings lets you erase or export it.</p>
-
-  <h2>The one thing that can leave</h2>
-  <p>
-    A question JobFill cannot answer is worth keeping even though your answer is not: it is the
-    wording every applicant to that board sees. They collect on the <strong>Contribute</strong>
-    tab where you can read them.
-  </p>
-  <p>
-    <strong>Nothing can be sent until you allow it once.</strong> Reaching the network is an
-    optional permission, so the browser does not grant it until the first time you press send.
-    Until you do, JobFill makes no network request at all and the questions sit in your browser
-    where you can read them.
-  </p>
-  <p>
-    After that, questions are shared as they are found, so you do not press a button after every
-    application. It only ever sends the four things listed below. Turning it off on the
-    Contribute tab stops it immediately, and clearing the list discards what was waiting.
-  </p>
-
-  <h3>Sent, if you send it</h3>
-  <ul>
-    <li>The job board, by name</li>
-    <li>The question, as the page words it</li>
-    <li>The options the page offered</li>
-    <li>The kind of control, and what went wrong</li>
-    <li>The extension version</li>
-  </ul>
-
-  <h3>Never sent, whatever you press</h3>
-  <ul>
-    <li>Your answers, your profile, or your resume</li>
-    <li>The page address, the company, or the role</li>
-    <li>Any account, install, device or session identifier that persists</li>
-    <li>Questions about race, gender, disability, veteran status, sexual orientation, religion, marital status or age</li>
-  </ul>
-  <p>
-    A report carries a token made fresh for that send and stored nowhere, so reports can be
-    counted but not linked to a person.
-  </p>
-
-  <h2>What happens to a sent question</h2>
-  <p>
-    It is held until five separate reports have seen the same question, so a question one company
-    wrote for one candidate never reaches anyone. After that it waits to be read and approved by
-    hand. Only then does it appear on <a href="https://dex.jobfill.app">the public dex</a>.
-  </p>
-
-  <h2>No analytics, ever</h2>
-  <p>
-    No analytics, no tracking, no advertising identifiers, no remote code, nothing sold. The PDF
-    reader and the fonts ship inside the extension.
-  </p>
-
-  <h2>Children</h2>
-  <p>JobFill is not directed at children under 13 and collects nothing from anyone knowingly.</p>
-
-  <h2>Questions</h2>
-  <p>
-    Open an issue at
-    <a href="https://github.com/LuisAhumadaMartens/jobfill/issues">github.com/LuisAhumadaMartens/jobfill</a>.
-    This page changes only when the extension does, and its history is in that repository.
-  </p>`
-});
-
 
 const SWATCHES = [
   ['--program', 'the one accent'],
@@ -365,10 +274,7 @@ Allow: /
 Sitemap: ${ORIGIN}/sitemap.xml
 `;
 
-const PAGES = [
-  { path: '/', priority: '1.0' },
-  { path: '/privacy.html', priority: '0.5' }
-];
+const PAGES = [{ path: '/', priority: '1.0' }];
 
 const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -381,7 +287,6 @@ ${PAGES.map(({ path, priority }) => `  <url>
 `;
 
 await Bun.write(join(DOCS, 'index.html'), home);
-await Bun.write(join(DOCS, 'privacy.html'), privacy);
 await mkdir(join(DOCS, 'ui'), { recursive: true });
 await Bun.write(join(DOCS, 'ui/index.html'), ui);
 await Bun.write(join(DOCS, 'robots.txt'), ROBOTS);
@@ -389,4 +294,4 @@ await Bun.write(join(DOCS, 'sitemap.xml'), SITEMAP);
 await Bun.write(join(DOCS, 'CNAME'), 'jobfill.app\n');
 await Bun.write(join(DOCS, '.nojekyll'), '');
 
-console.log('docs/ written: index.html, privacy.html, ui/index.html, robots.txt, sitemap.xml, CNAME');
+console.log('docs/ written: index.html, ui/index.html, robots.txt, sitemap.xml, CNAME');

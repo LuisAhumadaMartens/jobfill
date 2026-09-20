@@ -503,12 +503,12 @@ export function injectHighlightStyles(): void {
   style.id = 'jobfill-highlight-styles';
   style.textContent = `
     .${HIGHLIGHT_CLASS} {
-      outline: 2px solid #6366f1 !important;
+      outline: 2px solid #0574f5 !important;
       outline-offset: 1px !important;
-      border-radius: 3px;
+      border-radius: 0 !important;
       transition: outline-color .4s ease;
     }
-    .${HIGHLIGHT_CLASS}[data-jobfill="failed"] { outline-color: #f59e0b !important; }
+    .${HIGHLIGHT_CLASS}[data-jobfill="failed"] { outline-color: #e2b714 !important; }
   `;
   (document.head ?? document.documentElement).appendChild(style);
 }

@@ -1,4 +1,4 @@
-import { BACKDROP, LAYOUT, page } from '../design/index.ts';
+import { BACKDROP, LAYOUT, SHELL, footer, header, page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
 import type { EveryRow, QuestionRow, Totals } from './store.ts';
 
@@ -27,6 +27,7 @@ const STYLE = `
   ${page()}
   ${BACKDROP}
   ${LAYOUT}
+  ${SHELL}
 
   .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .stat { background: color-mix(in oklch, var(--raise), transparent 70%); border: 1px solid var(--line); padding: 16px 18px; }
@@ -72,6 +73,7 @@ export function dashboard(view: View): string {
 <style>${STYLE}</style>
 </head>
 <body>
+${header([{ href: 'https://jobfill.app', label: 'JobFill' }, { href: 'https://github.com/LuisAhumadaMartens/jobfill', label: 'Source' }], 'https://jobfill.app')}
 <main>
   <h1>JobFill Dex</h1>
   <p class="lede">
@@ -108,11 +110,11 @@ export function dashboard(view: View): string {
     ? `<table><thead><tr><th>Question</th><th>Board</th><th>Control</th><th>What happened</th><th style="text-align:right">Seen by</th></tr></thead><tbody>${rows}</tbody></table>`
     : `<p class="empty">Nothing has reached ${view.threshold} reports yet. That is the gate working, not an error.</p>`}
 
-  <footer>
+  <p class="note">
     Take the data: <a href="/v1/dex">/v1/dex</a> as JSON, <a href="/v1/dex.csv">/v1/dex.csv</a> as a spreadsheet.
-    Both are the same k-gated view this page shows.
-  </footer>
+  </p>
 </main>
+${footer([])}
 </body>
 </html>`;
 }
@@ -164,6 +166,7 @@ export function admin(rows: EveryRow[], threshold: number): string {
 </style>
 </head>
 <body>
+${header([{ href: 'https://jobfill.app', label: 'JobFill' }, { href: 'https://github.com/LuisAhumadaMartens/jobfill', label: 'Source' }], 'https://jobfill.app')}
 <main>
   <h1>Everything on record</h1>
   <p class="lede">
@@ -173,6 +176,7 @@ export function admin(rows: EveryRow[], threshold: number): string {
   <p class="note">Decide with <code>bun run dex:review</code>. This page only reads.</p>
   ${body}
 </main>
+${footer([])}
 </body>
 </html>`;
 }

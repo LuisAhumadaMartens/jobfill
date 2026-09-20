@@ -1,8 +1,10 @@
 import { tokens, type TokenOptions } from './tokens.ts';
 import { HUD, PILL, TABLE, edge } from './surfaces.ts';
 import { BACKDROP, LAYOUT, SECTION, SKEW } from './backdrop.ts';
+import { MARK, SHELL, footer, header } from './chrome.ts';
 
-export { tokens, edge, HUD, TABLE, PILL, BACKDROP, LAYOUT, SECTION, SKEW };
+export { tokens, edge, HUD, TABLE, PILL, BACKDROP, LAYOUT, SECTION, SKEW, MARK, SHELL, header, footer };
+export type { Link } from './chrome.ts';
 
 function face(family: string, weight: number, file: string): string {
   return `@font-face {
