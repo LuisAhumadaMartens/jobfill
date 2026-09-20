@@ -1,3 +1,4 @@
+import { page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
 import type { QuestionRow, Totals } from './store.ts';
 
@@ -23,34 +24,8 @@ function escapeHtml(value: string): string {
 }
 
 const STYLE = `
-  :root {
-    color-scheme: dark;
-    --program: oklch(0.583 0.212 258);
-    --ground: oklch(0.145 0.008 265);
-    --raise: oklch(0.19 0.01 265);
-    --fg: oklch(0.97 0.004 265);
-    --fg-muted: oklch(0.72 0.012 265);
-    --fg-faint: oklch(0.64 0.012 265);
-    --line: oklch(1 0 0 / 0.08);
-    --r-lg: 1rem;
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      color-scheme: light;
-      --ground: oklch(0.965 0.004 265);
-      --raise: oklch(1 0 0);
-      --fg: oklch(0.22 0.01 265);
-      --fg-muted: oklch(0.44 0.012 265);
-      --fg-faint: oklch(0.5 0.012 265);
-      --line: oklch(0 0 0 / 0.1);
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--ground); color: var(--fg);
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
+  ${page()}
+
   main { max-width: 940px; margin: 0 auto; padding: 48px 22px 100px; }
   h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0 0 10px; }
   .lede { color: var(--fg-muted); line-height: 1.65; max-width: 66ch; margin: 0 0 8px; }
@@ -59,10 +34,6 @@ const STYLE = `
   .stat { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; }
   .stat b { display: block; font-size: 26px; letter-spacing: -0.02em; }
   .stat span { color: var(--fg-faint); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  th { text-align: left; color: var(--fg-faint); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 12px 10px; font-weight: 700; }
-  td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--fg-muted); white-space: nowrap; }
   .q { font-weight: 600; }
   .opts { color: var(--fg-faint); font-size: 12px; margin-top: 5px; }
   .tag { display: inline-block; background: color-mix(in oklch, var(--program), transparent 84%); color: var(--program);
@@ -72,7 +43,6 @@ const STYLE = `
   .rules ul { margin: 0; padding-left: 20px; line-height: 1.8; color: var(--fg-muted); }
   .rules strong { color: var(--fg); }
   footer { margin-top: 44px; color: var(--fg-faint); font-size: 12.5px; line-height: 1.7; }
-  a { color: var(--program); }
 `;
 
 export function dashboard(view: View): string {

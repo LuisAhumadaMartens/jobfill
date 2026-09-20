@@ -1,5 +1,6 @@
 import { rm, mkdir, cp, readdir, stat } from 'node:fs/promises';
 import { writeIcons } from './icons.ts';
+import { FONTS, page, tokens } from '../design/index.ts';
 import { existsSync, watch } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 
@@ -15,7 +16,6 @@ const ENTRYPOINTS = [
 ];
 
 const STATIC_FILES: Array<[from: string, to: string]> = [
-  ['src/pages/theme.css', 'pages/theme.css'],
   ['assets/fonts', 'assets/fonts'],
   ['src/pages/options/options.html', 'pages/options/options.html'],
   ['src/pages/options/options.css', 'pages/options/options.css'],
@@ -26,6 +26,15 @@ const STATIC_FILES: Array<[from: string, to: string]> = [
   ['vendor/pdfjs/pdf.worker.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs'],
   ['vendor/pdfjs/LICENSE', 'vendor/pdfjs/LICENSE']
 ];
+
+async function writeStylesheets(): Promise<void> {
+  await mkdir(join(DIST, 'pages'), { recursive: true });
+  await Bun.write(join(DIST, 'pages/theme.css'), [FONTS, page()].join('\n'));
+
+  const panel = await Bun.file(join(SRC, 'content/panel.css')).text();
+  await mkdir(join(DIST, 'content'), { recursive: true });
+  await Bun.write(join(DIST, 'content/panel.css'), panel.replace('<tokens>', tokens({ selector: '.root', media: false })));
+}
 
 function versionOverride(): string | null {
   const flag = process.argv.indexOf('--version');
@@ -113,6 +122,7 @@ async function build(): Promise<boolean> {
   }
 
   await copyStatic();
+  await writeStylesheets();
   await writeIcons(join(DIST, 'icons'));
   await writeManifest();
   await assertContentScriptIsClassic();

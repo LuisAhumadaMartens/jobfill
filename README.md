@@ -123,9 +123,11 @@ Shortcuts: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> fills the page,
 ```bash
 bun run dev          # rebuild dist/ on save
 bun run playground   # fixture application forms at localhost:3000
-bun run dex    # the question bank at localhost:3100
-bun run dex:dev # the same thing the way Cloudflare runs it
-bun test             # 280 tests
+bun run dex          # the question bank at localhost:3100
+bun run dex:dev      # the same thing the way Cloudflare runs it
+bun run dex:review   # read what is waiting to be published, and decide
+bun run docs         # regenerate docs/ for jobfill.app
+bun test             # 297 tests
 bun run typecheck    # tsc --noEmit, strict
 bun run zip          # build + package for the Chrome Web Store
 ```
@@ -176,6 +178,8 @@ wording is saved onto the answer, so the next visit needs no inference at all.
 ## Layout
 
 ```
+design/                  the tokens and primitives every surface is built from
+docs/                    the site at jobfill.app, generated from design/
 src/
   manifest.json          MV3 manifest; the job-board list is written in at build time
   shared/

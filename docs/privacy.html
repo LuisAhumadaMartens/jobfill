@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JobFill privacy</title>
+<meta name="description" content="What JobFill stores, where it stores it, and the one thing that ever leaves your machine." />
+<style>:root {
+  color-scheme: dark;
+
+  --program: oklch(0.583 0.212 258);
+  --program-hover: oklch(0.643 0.202 258);
+  --program-fg: oklch(1 0 0);
+  --program-deep: oklch(0.503 0.212 258);
+
+  --ground: oklch(0.145 0.008 265);
+  --raise: oklch(0.19 0.01 265);
+  --sink: oklch(0.115 0.008 265);
+
+  --fg: oklch(0.97 0.004 265);
+  --fg-muted: oklch(0.72 0.012 265);
+  --fg-faint: oklch(0.64 0.012 265);
+
+  --line: oklch(1 0 0 / 0.08);
+  --line-2: oklch(1 0 0 / 0.16);
+
+  --danger: oklch(0.64 0.21 25);
+  --danger-fg: oklch(1 0 0);
+  --success: oklch(0.74 0.16 150);
+  --warn: oklch(0.79 0.15 75);
+
+  --fill: var(--raise);
+  --fill-fg: var(--fg);
+
+  --r-sm: 0.5rem;
+  --r-md: 0.75rem;
+  --r-lg: 1rem;
+  --r-xl: 1.25rem;
+  --r-pill: 9999px;
+  --r-border: 1px;
+  --r-gap: 0.25rem;
+  --r-row: calc(var(--r-lg) - var(--r-border) - var(--r-gap));
+
+  --font-sans: 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+  color-scheme: light;
+
+  --program: oklch(0.583 0.212 258);
+  --program-hover: oklch(0.533 0.212 258);
+  --program-fg: oklch(1 0 0);
+  --program-deep: oklch(0.473 0.205 258);
+
+  --ground: oklch(0.965 0.004 265);
+  --raise: oklch(1 0 0);
+  --sink: oklch(0.925 0.006 265);
+
+  --fg: oklch(0.22 0.01 265);
+  --fg-muted: oklch(0.44 0.012 265);
+  --fg-faint: oklch(0.5 0.012 265);
+
+  --line: oklch(0 0 0 / 0.1);
+  --line-2: oklch(0 0 0 / 0.18);
+
+  --warn: oklch(0.58 0.15 70);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+:focus-visible { outline: 2px solid var(--program); outline-offset: 2px; }
+
+a { color: var(--program); }
+
+
+input[type='text'],
+input[type='search'],
+input[type='email'],
+input[type='url'],
+input[type='tel'],
+input[type='number'],
+select,
+textarea {
+  width: 100%;
+  background-color: var(--sink);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.7rem;
+  transition: border-color 120ms linear;
+}
+
+input::placeholder,
+textarea::placeholder { color: var(--fg-faint); }
+
+input:hover,
+select:hover,
+textarea:hover { border-color: var(--line-2); }
+
+textarea { resize: vertical; }
+
+input[type='checkbox'] { accent-color: var(--program); width: 1rem; height: 1rem; }
+
+
+.primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  background-color: var(--program);
+  color: var(--program-fg);
+  font-weight: 700;
+  padding: 0.6rem 1.1rem;
+  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.45), 0 4px 10px oklch(0 0 0 / 0.3);
+  transition: background-color 160ms var(--ease), scale 160ms var(--ease);
+}
+
+.primary:hover:not(:disabled) { background-color: var(--program-hover); }
+.primary:active:not(:disabled) { scale: 0.97; }
+.primary:disabled { opacity: 0.45; cursor: default; }
+
+.danger {
+  border: 1px solid color-mix(in oklch, var(--danger), transparent 55%);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--danger);
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  transition: background-color 120ms linear, color 120ms linear;
+}
+
+.danger:hover { background-color: var(--danger); color: var(--danger-fg); }
+
+.link { border: 0; background: none; padding: 0; color: var(--program); font-weight: 700; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.link.muted { color: var(--fg-faint); font-weight: 400; }
+
+
+.ghost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  background-color: var(--raise);
+  color: var(--fg);
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  --fill: var(--raise);
+  transition: background-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.ghost::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--fill), var(--fg) 24%) 0,
+    color-mix(in oklch, var(--fill), var(--fg) 10%) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.ghost:hover { background-color: color-mix(in oklch, var(--raise), var(--fg) 7%); }
+.ghost:active:not(:disabled) { box-shadow: inset 0 2px 5px color-mix(in oklch, var(--raise), black 32%); }
+
+.outline {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg);
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  transition: background-color 120ms linear, border-color 120ms linear, color 120ms linear;
+}
+
+.outline:hover { background-color: var(--program); border-color: var(--program); color: var(--program-fg); }
+
+.press {
+  transition: background-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+@media (hover: hover) {
+  .press:hover { background-color: color-mix(in oklch, var(--fill), var(--fill-fg) 7%); }
+}
+
+.press:active:not(:disabled) {
+  background-color: color-mix(in oklch, var(--fill), black 6%);
+  box-shadow: inset 0 2px 5px color-mix(in oklch, var(--fill), black 32%);
+}
+
+.box {
+  position: relative;
+  background-color: var(--fill);
+  border: 0;
+  border-radius: var(--r-box, var(--r-lg));
+}
+
+.box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--fill), var(--fill-fg) 24%) 0,
+    color-mix(in oklch, var(--fill), var(--fill-fg) 10%) 1.25rem,
+    color-mix(in oklch, var(--fill), var(--fill-fg) 10%) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+@supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+  .box::before { display: none; }
+  .box { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--fill), var(--fill-fg) 12%); }
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th {
+  text-align: left;
+  color: var(--fg-faint);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 12px 10px;
+  font-weight: 700;
+}
+td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--fg-muted); white-space: nowrap; }
+
+
+.pill {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: color-mix(in oklch, var(--program), transparent 82%);
+  color: var(--program);
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+  main { max-width: 820px; margin: 0 auto; padding: 56px 22px 110px; }
+  nav { display: flex; gap: 18px; align-items: center; margin-bottom: 44px; font-size: 14px; }
+  nav .brand { font-weight: 900; font-size: 17px; letter-spacing: -0.02em; margin-right: auto; }
+  nav a { text-decoration: none; color: var(--fg-muted); font-weight: 700; }
+  nav a:hover { color: var(--fg); }
+  h1 { font-size: 42px; letter-spacing: -0.04em; margin: 0 0 14px; line-height: 1.05; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-faint); margin: 52px 0 16px; }
+  h3 { font-size: 17px; margin: 30px 0 8px; letter-spacing: -0.01em; }
+  p { color: var(--fg-muted); line-height: 1.7; max-width: 68ch; }
+  .lede { font-size: 18px; color: var(--fg-muted); line-height: 1.6; max-width: 62ch; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 30px 0 8px; }
+  .cta a { text-decoration: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .card { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; }
+  .card h3 { margin: 0 0 7px; font-size: 15px; }
+  .card p { margin: 0; font-size: 14px; }
+  ul { color: var(--fg-muted); line-height: 1.8; max-width: 68ch; }
+  li strong { color: var(--fg); }
+  .boards { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+  .boards span { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-pill);
+                 padding: 4px 11px; font-size: 12.5px; color: var(--fg-muted); }
+  footer { margin-top: 70px; padding-top: 24px; border-top: 1px solid var(--line);
+           color: var(--fg-faint); font-size: 13px; line-height: 1.8; }
+  code { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-sm);
+         padding: 1px 6px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <span class="brand">JobFill</span>
+    <a href="/">Home</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="https://dex.jobfill.app">Dex</a>
+    <a href="https://github.com/LuisAhumadaMartens/jobfill">GitHub</a>
+  </nav>
+  <h1>Privacy</h1>
+  <p class="lede">
+    JobFill holds a resume, a profile and a list of answers. All of it stays in this browser
+    profile, on your machine. There is no account, no server it reports to, and no network
+    request it makes on its own.
+  </p>
+
+  <h2>What is stored, and where</h2>
+  <ul>
+    <li><strong>Your resume file and its text</strong>, in <code>chrome.storage.local</code> on this computer.</li>
+    <li><strong>Your profile</strong>: name, email, phone, address, links, work history, education, skills, references, languages and certifications.</li>
+    <li><strong>Your answers</strong>, and the wordings each site used for the questions they answer.</li>
+    <li><strong>Your settings</strong>, including which sites JobFill is allowed to run on.</li>
+  </ul>
+  <p>
+    None of it is transmitted. Uninstalling the extension removes all of it. You can erase it at
+    any time from the Settings tab, and export it as a JSON file you keep.
+  </p>
+
+  <h2>The one thing that can leave</h2>
+  <p>
+    When JobFill cannot answer a question, the question is worth keeping even though your answer
+    is not: it is the same wording every applicant to that job board sees. Those collect on the
+    <strong>Contribute</strong> tab, in your browser, where you can read every one.
+  </p>
+  <p>
+    <strong>Nothing is sent unless you press send.</strong> The permission to reach the network is
+    optional, so the browser does not grant it until the first time you choose to. If you never
+    press it, JobFill never makes a network request at all.
+  </p>
+
+  <h3>Sent, if you send it</h3>
+  <ul>
+    <li>The job board, by name</li>
+    <li>The question, as the page words it</li>
+    <li>The options the page offered</li>
+    <li>The kind of control, and what went wrong</li>
+    <li>The extension version</li>
+  </ul>
+
+  <h3>Never sent, whatever you press</h3>
+  <ul>
+    <li>Your answers, your profile, or your resume</li>
+    <li>The page address, the company, or the role</li>
+    <li>Any account, install, device or session identifier that persists</li>
+    <li>Questions about race, gender, disability, veteran status, sexual orientation, religion, marital status or age</li>
+  </ul>
+  <p>
+    A report carries a random token made fresh for that one send and stored nowhere. It exists so
+    separate reports can be counted, not so people can be. Two reports cannot be linked to one
+    person, because there is nothing in them to link.
+  </p>
+
+  <h2>What happens to a sent question</h2>
+  <p>
+    It is held until five separate reports have seen the same question, so a question one company
+    wrote for one candidate never reaches anyone. After that it waits to be read and approved by
+    hand. Only then does it appear on <a href="https://dex.jobfill.app">the public dex</a>.
+  </p>
+
+  <h2>No analytics, ever</h2>
+  <p>
+    No analytics, no tracking, no advertising identifiers, no remote code, and nothing sold or
+    shared with anybody. JobFill contains no third-party code that phones home. The PDF reader and
+    the fonts are bundled inside the extension.
+  </p>
+
+  <h2>Children</h2>
+  <p>JobFill is not directed at children under 13 and collects nothing from anyone knowingly.</p>
+
+  <h2>Questions</h2>
+  <p>
+    Open an issue at
+    <a href="https://github.com/LuisAhumadaMartens/jobfill/issues">github.com/LuisAhumadaMartens/jobfill</a>.
+    This page changes only when the extension does, and its history is in that repository.
+  </p>
+  <footer>
+    JobFill is free for personal use under <a href="https://github.com/LuisAhumadaMartens/jobfill/blob/main/LICENSE.md">PolyForm Strict 1.0.0</a>.
+    Built by <a href="https://github.com/LuisAhumadaMartens">Luis Ahumada</a>.
+  </footer>
+</main>
+</body>
+</html>
