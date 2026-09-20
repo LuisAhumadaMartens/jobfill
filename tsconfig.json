@@ -14,6 +14,6 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["bun", "chrome"]
   },
-  "include": ["src", "tests", "scripts", "tools"],
+  "include": ["src", "tests", "scripts", "tools", "atlas"],
   "exclude": ["dist", "vendor", "node_modules"]
 }

@@ -13,6 +13,7 @@
         <button class="tab" role="tab" data-tab="resume" aria-selected="true">Resume</button>
         <button class="tab" role="tab" data-tab="profile" aria-selected="false">Profile</button>
         <button class="tab" role="tab" data-tab="answers" aria-selected="false">Answers</button>
+        <button class="tab" role="tab" data-tab="contribute" aria-selected="false">Contribute</button>
         <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
       </nav>
       <span class="saved" id="saved" aria-live="polite"></span>
@@ -106,6 +107,53 @@
         </div>
 
         <div id="answer-list" class="answers"></div>
+      </section>
+
+      <section id="panel-contribute" class="panel" hidden>
+        <div class="intro">
+          <h2>Contribute</h2>
+          <p>
+            When JobFill cannot answer a question, the question itself is worth keeping: it is the
+            same wording every applicant to that board sees. Sending those, and nothing else, is what
+            teaches JobFill to answer them next time, for you and for everyone.
+          </p>
+        </div>
+
+        <div class="pact">
+          <div class="pact-side">
+            <h4>What is sent</h4>
+            <ul>
+              <li>The job board, by name</li>
+              <li>The question, as the page words it</li>
+              <li>The options the page offered</li>
+              <li>The kind of control, and what went wrong</li>
+            </ul>
+          </div>
+          <div class="pact-side deny">
+            <h4>What is never sent</h4>
+            <ul>
+              <li>Your answers, profile or resume</li>
+              <li>The page address, company or role</li>
+              <li>Any account, install or device id</li>
+              <li>Questions about race, gender, disability, veteran status, orientation, religion or age</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="fine" id="atlas-gate"></p>
+
+        <h3>Waiting to be sent</h3>
+        <div id="atlas-queue" class="entries"></div>
+
+        <div class="row-actions">
+          <button class="primary" id="atlas-send">Review and send</button>
+          <button class="ghost" id="atlas-copy">Copy as JSON</button>
+          <button class="danger" id="atlas-clear">Discard all</button>
+        </div>
+
+        <h3>Collection</h3>
+        <form id="atlas-settings" class="settings"></form>
+        <p class="fine" id="atlas-status"></p>
       </section>
 
       <section id="panel-settings" class="panel" hidden>

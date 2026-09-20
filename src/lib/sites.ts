@@ -38,3 +38,7 @@ export function isKnownATS(host: string): boolean {
 export function originPatternFor(host: string): string {
   return `*://${host}/*`;
 }
+
+export function atsFor(host: string): string | null {
+  return ATS_HOSTS.find((ats) => host === ats || host.endsWith('.' + ats)) ?? null;
+}

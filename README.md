@@ -123,7 +123,8 @@ Shortcuts: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> fills the page,
 ```bash
 bun run dev          # rebuild dist/ on save
 bun run playground   # fixture application forms at localhost:3000
-bun test             # 70 tests
+bun run atlas        # the question atlas at localhost:3100
+bun test             # 274 tests
 bun run typecheck    # tsc --noEmit, strict
 bun run zip          # build + package for the Chrome Web Store
 ```
@@ -196,6 +197,7 @@ src/
     popup/               quick status, filling, per-site control
 assets/fonts/            Lato, vendored (SIL OFL)
 vendor/pdfjs/            vendored PDF reader, with types
+atlas/                   the question atlas: Elysia service, SQLite, public dashboard
 tools/playground/        Elysia fixture server + forms
 tests/                   bun test, with happy-dom for the DOM-walking ones
 scripts/build.ts         Bun bundler -> dist/
@@ -204,10 +206,41 @@ scripts/icons.ts         draws the extension icons at build time
 
 ## Privacy
 
-No analytics, no telemetry, no remote code, no network requests. Your resume, your
-answers and your profile stay in `chrome.storage.local` on this machine. Exports leave
-out the resume binary on purpose, and carry everything else: answers, profile, work
-history, education, skills, references, languages and certifications.
+No analytics, no telemetry, no remote code, and no network request JobFill makes on its
+own. Your resume, your answers and your profile stay in `chrome.storage.local` on this
+machine. Exports leave out the resume binary on purpose, and carry everything else:
+answers, profile, work history, education, skills, references, languages and
+certifications.
+
+There is exactly one way anything leaves, and you press it. See [Contributing
+questions](#contributing-questions).
+
+## Contributing questions
+
+When JobFill cannot answer a question, the question is worth keeping even though the
+answer is not: it is the same wording every applicant to that board sees. Those pile up
+on the **Contribute** tab, in this browser, and you can read every one before deciding.
+
+The rule the whole thing is built on: **the question is public, the answer is private.**
+
+| Sent, if you press send | Never sent |
+|---|---|
+| The job board, by name | Your answers, profile or resume |
+| The question, as the page words it | The page address, the company, the role |
+| The options the page offered | Any account, install or device id |
+| The control, and what went wrong | Race, gender, disability, veteran status, orientation, religion or age |
+
+Nothing is sent on its own, ever. The network permission is optional, so Chrome does not
+even grant it until the first time you choose to send. There is no identifier of any kind
+in a report, so two reports cannot be tied to one person, and a question stays unpublished
+until five separate reports have seen it, which is how a question one company wrote for
+one candidate never reaches the public page.
+
+Everything published is at [`atlas/`](atlas/README.md), which is the service, the
+dashboard and the rules, all in this repository. The extension and the server share one
+validator, [`src/shared/atlas.ts`](src/shared/atlas.ts), so what may be collected has a
+single definition and the server re-checks it on arrival rather than trusting the
+extension that sent it.
 
 ## Releases
 
@@ -221,9 +254,12 @@ that minor. Raising the minor in the manifest restarts the patch at zero.
 
 The release then writes that version back into `src/manifest.json` and commits it as
 `Release vX.Y.Z`, so the version the extension reports in `chrome://extensions` is the
-version of the release it came from. The tag points at that commit, and the message
-carries `[skip ci]` so it does not start a run of its own. It does mean `main` moves
-when a release goes out, so pull before your next push.
+version of the release it came from. The tag points at that commit. That push does not
+start a run of its own, because GitHub does not raise workflow events for anything
+pushed with the built-in `GITHUB_TOKEN`; if the push ever moves to a token that does,
+the release job still stops on its own, since the commit it would act on is already
+tagged. It does mean `main` moves when a release goes out, so pull before your next
+push.
 
 ```bash
 bun run scripts/version.ts                        # what the next release would be

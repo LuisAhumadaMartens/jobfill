@@ -24,7 +24,7 @@ function memoryArea(): Area {
   };
 }
 
-const area: Area = (typeof chrome !== 'undefined' && chrome.storage?.local)
+export const area: Area = (typeof chrome !== 'undefined' && chrome.storage?.local)
   ? (chrome.storage.local as unknown as Area)
   : memoryArea();
 

@@ -2,6 +2,9 @@ import * as storage from '../lib/answers/storage.ts';
 import { sendToTab } from '../shared/messages.ts';
 import { BADGE_ATTENTION, BADGE_READY, CONTENT_SCRIPT } from '../shared/paths.ts';
 import type { FrameReport, ReportAck, TabSnapshot, ToBackground, ToContent } from '../shared/messages.ts';
+import { observationsFor } from '../lib/atlas/collect.ts';
+import { enqueue, readConsent } from '../lib/atlas/queue.ts';
+import { load } from '../lib/answers/storage.ts';
 import type { FieldPlan } from '../shared/types.ts';
 
 const MENU_FILL = 'jobfill-fill-page';
@@ -55,6 +58,23 @@ async function syncPanelOwner(tabId: number): Promise<number> {
   if (previous !== undefined) await sendToTab(tabId, { kind: 'panel-role', owns: false }, previous);
   await sendToTab(tabId, { kind: 'panel-role', owns: true }, owner);
   return owner;
+}
+
+async function collect(url: string, plans: FieldPlan[]): Promise<void> {
+  if (!plans.length) return;
+
+  const consent = await readConsent();
+  if (!consent.askAfterApplying) return;
+
+  let host: string;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return;
+  }
+
+  const { profile } = await load();
+  await enqueue(observationsFor(plans, host, profile));
 }
 
 function framesOf(tabId: number): Map<number, FrameReport> {
@@ -128,6 +148,7 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
           scannedAt: Date.now()
         });
         await paintBadge(tabId);
+        await collect(message.url, message.plans);
         const owner = await syncPanelOwner(tabId);
 
         if (frameId !== owner) {

@@ -10,7 +10,8 @@
     "playground": "bun run tools/playground/server.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "zip": "bun run scripts/build.ts --zip"
+    "zip": "bun run scripts/build.ts --zip",
+    "atlas": "bun run atlas/server.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",

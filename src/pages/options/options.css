@@ -371,3 +371,27 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
   border-radius: var(--r-pill); font-size: 12.5px; font-weight: 700; padding: 7px 14px;
 }
 .records .add:hover { border-color: var(--program); color: var(--program); }
+
+.pact { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+
+.pact-side {
+  --fill: var(--raise);
+  position: relative;
+  background-color: var(--fill);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+}
+
+.pact-side h4 {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--program);
+}
+
+.pact-side.deny h4 { color: var(--fg-faint); }
+.pact-side ul { margin: 0; padding-left: 17px; color: var(--fg-muted); font-size: 13px; line-height: 1.7; }
+
+.atlas-q { font-weight: 700; font-size: 13.5px; }
+.atlas-opts { color: var(--fg-faint); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }

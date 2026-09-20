@@ -5,10 +5,13 @@ import { readResumeFile, readResumeText, type ParsedResume } from '../../lib/res
 import { ATS_HOSTS } from '../../lib/sites.ts';
 import { toEducationEntries, toWorkEntries } from '../../lib/answers/history.ts';
 import { applyImport, planImport, type ImportChange } from '../../lib/answers/import-review.ts';
+import * as queue from '../../lib/atlas/queue.ts';
+import { ATLAS_ORIGIN, askPermission, hasPermission, sendQueue } from '../../lib/atlas/send.ts';
+import type { Observation } from '../../shared/atlas.ts';
 import type { Answer, State } from '../../shared/types.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
-const TABS = ['resume', 'profile', 'answers', 'settings'] as const;
+const TABS = ['resume', 'profile', 'answers', 'contribute', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 let state: State;
@@ -16,6 +19,8 @@ let parsed: ParsedResume | null = null;
 let pending: ImportChange[] = [];
 let filter = '';
 let savedTimer: ReturnType<typeof setTimeout> | null = null;
+let waiting: Observation[] = [];
+let consent: queue.Consent = { granted: false, askAfterApplying: true, lastSentAt: null, sentTotal: 0 };
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -346,6 +351,106 @@ function renderEducation(): void {
     : '<p class="empty">No education yet. Import a resume on the Resume tab.</p>';
 }
 
+const OUTCOMES: Record<string, string> = {
+  unmatched: 'nothing matched',
+  unsure: 'matched, but not confidently',
+  'no-option': 'no option fitted the answer',
+  cleared: 'the page cleared what was filled',
+  replaced: 'the page replaced what was filled'
+};
+
+async function renderContribute(): Promise<void> {
+  waiting = await queue.readQueue();
+  consent = await queue.readConsent();
+
+  $('atlas-gate').textContent =
+    'A question stays private until five separate reports have seen it, so a question one company wrote for one person never reaches the public page.';
+
+  $('atlas-queue').innerHTML = waiting.length
+    ? waiting.map((observation, index) => `
+        <article class="entry">
+          <div class="entry-main">
+            <div class="atlas-q">${escapeHtml(observation.question)}</div>
+            <div class="entry-meta">
+              ${escapeHtml(observation.ats)} &middot; ${escapeHtml(observation.control)} &middot; ${escapeHtml(OUTCOMES[observation.outcome] ?? observation.outcome)}
+            </div>
+            ${observation.options.length ? `<div class="atlas-opts">${observation.options.map(escapeHtml).join(' &middot; ')}</div>` : ''}
+          </div>
+          <div class="entry-actions">
+            <button class="danger" data-forget="${index}">Forget</button>
+          </div>
+        </article>`).join('')
+    : '<p class="empty">Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.</p>';
+
+  $<HTMLButtonElement>('atlas-send').disabled = !waiting.length;
+  $<HTMLButtonElement>('atlas-copy').disabled = !waiting.length;
+  $<HTMLButtonElement>('atlas-clear').disabled = !waiting.length;
+
+  $('atlas-settings').innerHTML = `
+    <label class="setting">
+      <input type="checkbox" id="atlas-collect" ${consent.askAfterApplying ? 'checked' : ''} />
+      <span class="text">
+        <strong>Keep questions JobFill could not answer</strong>
+        <span>Held in this browser and shown above. Nothing is sent until you press send.</span>
+      </span>
+    </label>`;
+
+  $('atlas-status').textContent = consent.sentTotal
+    ? `${consent.sentTotal} question${consent.sentTotal === 1 ? '' : 's'} sent so far, last on ${new Date(consent.lastSentAt ?? '').toLocaleDateString()}.`
+    : 'Nothing has been sent from this browser.';
+}
+
+async function sendContributions(): Promise<void> {
+  const origin = ATLAS_ORIGIN;
+
+  if (!(await hasPermission(origin))) {
+    const granted = await askPermission(origin);
+    if (!granted) {
+      flash('Not sent');
+      return;
+    }
+    await queue.writeConsent({ granted: true });
+  }
+
+  flash('Sending...');
+  const result = await sendQueue(origin, chrome.runtime.getManifest().version);
+  await renderContribute();
+
+  if (result.sent) flash(`Sent ${result.sent}`);
+  else flash(result.refused[0] ?? 'Nothing sent');
+}
+
+function wireContribute(): void {
+  $('atlas-queue').addEventListener('click', async (event) => {
+    const index = (event.target as HTMLElement).dataset.forget;
+    if (index === undefined) return;
+    const observation = waiting[Number(index)];
+    if (observation) await queue.drop(observation.question, observation.ats);
+    await renderContribute();
+    flash('Forgotten');
+  });
+
+  $('atlas-send').addEventListener('click', () => void sendContributions());
+
+  $('atlas-copy').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(JSON.stringify(waiting, null, 2));
+    flash('Copied');
+  });
+
+  $('atlas-clear').addEventListener('click', async () => {
+    await queue.clearQueue();
+    await renderContribute();
+    flash('Discarded');
+  });
+
+  $('atlas-settings').addEventListener('change', async (event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.id !== 'atlas-collect') return;
+    await queue.writeConsent({ askAfterApplying: input.checked });
+    flash();
+  });
+}
+
 function renderSkills(): void {
   $<HTMLTextAreaElement>('skills').value = (state.skills ?? []).join(', ');
 }
@@ -619,6 +724,8 @@ async function boot(): Promise<void> {
   for (const shape of RECORD_SHAPES()) wireRecords(shape);
   renderAnswers();
   renderSettings();
+  wireContribute();
+  await renderContribute();
 
   $('tabs').addEventListener('click', (event) => {
     const tab = (event.target as HTMLElement).closest('.tab') as HTMLElement | null;
