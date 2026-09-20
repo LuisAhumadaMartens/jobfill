@@ -141,23 +141,30 @@ function renderResumes(): void {
   const entries = state.resumes ?? [];
 
   $('resume-list').innerHTML = entries.length
-    ? entries.map((entry) => `
-        <article class="answer" style="padding:12px 15px" data-resume="${entry.id}">
-          <div class="q">
-            <input type="text" data-role="label" value="${escapeHtml(entry.label || entry.name)}" aria-label="Name for this resume" />
-            ${entry.id === state.masterId ? '<span class="pill">details</span>' : ''}
-            ${entry.id === state.attachmentId ? '<span class="pill">attached</span>' : ''}
+    ? entries.map((entry) => {
+        const isMaster = entry.id === state.masterId;
+        const isAttached = entry.id === state.attachmentId;
+        return `
+        <article class="entry" data-resume="${entry.id}">
+          <div class="entry-main">
+            <div class="entry-name">
+              <input type="text" data-role="label" value="${escapeHtml(entry.label || entry.name)}" aria-label="Name for this resume" />
+            </div>
+            <div class="entry-meta">
+              ${escapeHtml(entry.name)}${entry.size ? ` &middot; ${Math.round(entry.size / 1024)} KB` : ''}${entry.dataUrl ? '' : ' &middot; text only, nothing to attach'}
+            </div>
+            <div class="roles">
+              <button class="role" data-master="1" aria-pressed="${isMaster}" ${isMaster ? 'disabled' : ''}
+                      title="Read your details from this one">Details</button>
+              <button class="role" data-attach="1" aria-pressed="${isAttached}" ${isAttached || !entry.dataUrl ? 'disabled' : ''}
+                      title="${entry.dataUrl ? 'Send this file to employers' : 'Pasted text cannot be attached to an application'}">Attached</button>
+            </div>
           </div>
-          <div class="v" style="max-width:none">
-            ${escapeHtml(entry.name)}${entry.size ? ` &middot; ${Math.round(entry.size / 1024)} KB` : ''}
-            ${entry.dataUrl ? '' : ' &middot; text only, cannot be attached'}
-          </div>
-          <div class="actions" style="margin-top:10px">
-            ${entry.id === state.masterId ? '' : '<button class="ghost" data-master="1">Read details from this</button>'}
-            ${entry.id === state.attachmentId || !entry.dataUrl ? '' : '<button class="ghost" data-attach="1">Attach this one</button>'}
+          <div class="entry-actions">
             <button class="danger" data-drop="1">Remove</button>
           </div>
-        </article>`).join('')
+        </article>`;
+      }).join('')
     : '<p class="empty">No resumes yet. Drop one above.</p>';
 }
 
@@ -207,14 +214,16 @@ function renderHistory(): void {
   const entries = state.history ?? [];
   $('history').innerHTML = entries.length
     ? entries.map((entry, index) => `
-        <article class="answer" style="padding: 12px 15px">
-          <div class="q">${escapeHtml(entry.title || 'Role')}</div>
-          <div class="v" style="max-width:none">
-            ${escapeHtml(entry.company)}${entry.location ? ` &middot; ${escapeHtml(entry.location)}` : ''}
-            ${entry.start ? ` &middot; ${escapeHtml(entry.start)} to ${entry.current ? 'now' : escapeHtml(entry.end || 'unknown')}` : ''}
+        <article class="entry">
+          <div class="entry-main">
+            <div class="entry-name">${escapeHtml(entry.title || 'Role')}</div>
+            <div class="entry-meta">
+              ${escapeHtml(entry.company)}${entry.location ? ` &middot; ${escapeHtml(entry.location)}` : ''}
+              ${entry.start ? ` &middot; ${escapeHtml(entry.start)} to ${entry.current ? 'now' : escapeHtml(entry.end || 'unknown')}` : ''}
+            </div>
+            ${entry.skills.length ? `<div class="aliases entry-tags">${entry.skills.map((skill) => `<span class="alias">${escapeHtml(skill)}</span>`).join('')}</div>` : ''}
           </div>
-          ${entry.skills.length ? `<div class="aliases" style="margin-top:9px">${entry.skills.map((skill) => `<span class="alias">${escapeHtml(skill)}</span>`).join('')}</div>` : ''}
-          <div class="actions" style="margin-top:10px">
+          <div class="entry-actions">
             <button class="danger" data-remove="${index}">Remove</button>
           </div>
         </article>`).join('')
@@ -239,7 +248,7 @@ function renderRecords<T extends Record<string, string>>(shape: RecordShape<T>):
           <input type="text" data-key="${field.key}" placeholder="${escapeHtml(field.label)}"
                  value="${escapeHtml(entry[field.key] ?? '')}" aria-label="${escapeHtml(field.label)}" />`).join('')}
       </div>
-      <div class="drop-row"><button data-drop="${index}">Remove</button></div>
+      <button data-drop="${index}">Remove</button>
     </div>`).join('');
 
   $(shape.id).innerHTML = rows + `<button class="add" data-add="1">Add</button>`;
@@ -321,14 +330,16 @@ function renderEducation(): void {
   const entries = state.education ?? [];
   $('education').innerHTML = entries.length
     ? entries.map((entry, index) => `
-        <article class="answer" style="padding: 12px 15px">
-          <div class="q">${escapeHtml(entry.school || 'School')}</div>
-          <div class="v" style="max-width:none">
-            ${escapeHtml([entry.degree, entry.field].filter(Boolean).join(', '))}
-            ${entry.end ? ` &middot; ${escapeHtml(entry.end)}` : ''}
-            ${entry.gpa ? ` &middot; GPA ${escapeHtml(entry.gpa)}` : ''}
+        <article class="entry">
+          <div class="entry-main">
+            <div class="entry-name">${escapeHtml(entry.school || 'School')}</div>
+            <div class="entry-meta">
+              ${escapeHtml([entry.degree, entry.field].filter(Boolean).join(', '))}
+              ${entry.end ? ` &middot; ${escapeHtml(entry.end)}` : ''}
+              ${entry.gpa ? ` &middot; GPA ${escapeHtml(entry.gpa)}` : ''}
+            </div>
           </div>
-          <div class="actions" style="margin-top:10px">
+          <div class="entry-actions">
             <button class="danger" data-remove-education="${index}">Remove</button>
           </div>
         </article>`).join('')
