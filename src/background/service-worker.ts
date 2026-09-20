@@ -3,7 +3,8 @@ import { resolveTabId, sendToTab } from '../shared/messages.ts';
 import { BADGE_ATTENTION, BADGE_READY, CONTENT_SCRIPT } from '../shared/paths.ts';
 import type { FrameReport, ReportAck, TabSnapshot, ToBackground, ToContent } from '../shared/messages.ts';
 import { observationsFor } from '../lib/dex/collect.ts';
-import { enqueue, readConsent } from '../lib/dex/queue.ts';
+import { dueToSend, enqueue, readConsent } from '../lib/dex/queue.ts';
+import { DEX_ORIGIN, hasPermission, sendQueue } from '../lib/dex/send.ts';
 import { load } from '../lib/answers/storage.ts';
 import type { FieldPlan } from '../shared/types.ts';
 
@@ -74,7 +75,12 @@ async function collect(url: string, plans: FieldPlan[]): Promise<void> {
   }
 
   const { profile } = await load();
-  await enqueue(observationsFor(plans, host, profile));
+  const added = await enqueue(observationsFor(plans, host, profile));
+
+  if (!dueToSend(consent, added)) return;
+  if (!(await hasPermission(DEX_ORIGIN))) return;
+
+  await sendQueue(DEX_ORIGIN, chrome.runtime.getManifest().version);
 }
 
 function framesOf(tabId: number): Map<number, FrameReport> {

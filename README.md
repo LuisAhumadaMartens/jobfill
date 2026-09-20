@@ -236,8 +236,9 @@ The rule the whole thing is built on: **the question is public, the answer is pr
 | The options the page offered | Any account, install or device id |
 | The control, and what went wrong | Race, gender, disability, veteran status, orientation, religion or age |
 
-Nothing is sent on its own, ever. The network permission is optional, so Chrome does not
-even grant it until the first time you choose to send. There is no identifier of any kind
+Nothing can be sent until you allow it once: the network permission is optional, so Chrome
+does not grant it until the first time you press send. After that questions are shared as
+they are found, and turning it off on the Contribute tab stops it immediately. There is no identifier of any kind
 in a report, so two reports cannot be tied to one person, and a question stays unpublished
 until five separate reports have seen it, which is how a question one company wrote for
 one candidate never reaches the public page.

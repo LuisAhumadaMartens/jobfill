@@ -20,7 +20,7 @@ let pending: ImportChange[] = [];
 let filter = '';
 let savedTimer: ReturnType<typeof setTimeout> | null = null;
 let waiting: Observation[] = [];
-let consent: queue.Consent = { granted: false, askAfterApplying: true, lastSentAt: null, sentTotal: 0 };
+let consent: queue.Consent = { granted: false, askAfterApplying: true, autoSend: true, lastSentAt: null, sentTotal: 0 };
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -363,8 +363,9 @@ async function renderContribute(): Promise<void> {
   waiting = await queue.readQueue();
   consent = await queue.readConsent();
 
-  $('dex-gate').textContent =
-    'A question stays private until five separate reports have seen it, so a question one company wrote for one person never reaches the public page.';
+  $('dex-gate').textContent = consent.granted
+    ? 'Sharing is on. Questions go as they are found, and a question stays private until five separate reports have seen it and a person has approved it.'
+    : 'Nothing has left this browser yet. Sending once grants the network permission, and after that questions go on their own.';
 
   $('dex-queue').innerHTML = waiting.length
     ? waiting.map((observation, index) => `
@@ -382,6 +383,7 @@ async function renderContribute(): Promise<void> {
         </article>`).join('')
     : '<p class="empty">Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.</p>';
 
+  $('dex-send').textContent = consent.granted ? 'Send now' : 'Review and send';
   $<HTMLButtonElement>('dex-send').disabled = !waiting.length;
   $<HTMLButtonElement>('dex-copy').disabled = !waiting.length;
   $<HTMLButtonElement>('dex-clear').disabled = !waiting.length;
@@ -391,7 +393,16 @@ async function renderContribute(): Promise<void> {
       <input type="checkbox" id="dex-collect" ${consent.askAfterApplying ? 'checked' : ''} />
       <span class="text">
         <strong>Keep questions JobFill could not answer</strong>
-        <span>Held in this browser and shown above. Nothing is sent until you press send.</span>
+        <span>Held in this browser and shown above.</span>
+      </span>
+    </label>
+    <label class="setting">
+      <input type="checkbox" id="dex-auto" ${consent.autoSend ? 'checked' : ''} />
+      <span class="text">
+        <strong>Share them as they are found</strong>
+        <span>${consent.granted
+          ? 'A question is sent as soon as it is collected. Turn this off and nothing leaves again.'
+          : 'Press Review and send once to let the browser grant network access. After that it happens on its own.'}</span>
       </span>
     </label>`;
 
@@ -445,8 +456,12 @@ function wireContribute(): void {
 
   $('dex-settings').addEventListener('change', async (event) => {
     const input = event.target as HTMLInputElement;
-    if (input.id !== 'dex-collect') return;
-    await queue.writeConsent({ askAfterApplying: input.checked });
+
+    if (input.id === 'dex-collect') await queue.writeConsent({ askAfterApplying: input.checked });
+    else if (input.id === 'dex-auto') await queue.writeConsent({ autoSend: input.checked });
+    else return;
+
+    await renderContribute();
     flash();
   });
 }

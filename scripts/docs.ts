@@ -171,9 +171,15 @@ const privacy = shell({
     <strong>Contribute</strong> tab, in your browser, where you can read every one.
   </p>
   <p>
-    <strong>Nothing is sent unless you press send.</strong> The permission to reach the network is
-    optional, so the browser does not grant it until the first time you choose to. If you never
-    press it, JobFill never makes a network request at all.
+    <strong>Nothing can be sent until you allow it once.</strong> Reaching the network is an
+    optional permission, so the browser does not grant it until the first time you press send.
+    Until you do, JobFill makes no network request at all and the questions sit in your browser
+    where you can read them.
+  </p>
+  <p>
+    After that, questions are shared as they are found, so you do not press a button after every
+    application. It only ever sends the four things listed below. Turning it off on the
+    Contribute tab stops it immediately, and clearing the list discards what was waiting.
   </p>
 
   <h3>Sent, if you send it</h3>
