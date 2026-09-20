@@ -22,39 +22,31 @@
 
       <section id="panel-resume" class="panel">
         <div class="intro">
-          <h2>Start from your resume</h2>
+          <h2>Your resumes</h2>
           <p>
-            Two separate things. Your <strong>master resume</strong> is read for your details:
-            put everything in it, however long. The <strong>file to attach</strong> is what
-            employers actually receive, and is usually shorter. They can be the same file.
-            Both are read inside this browser, with no upload and no server.
+            Add as many as you keep. One is read for your details, one is the file employers
+            receive, and they do not have to be the same. Everything is read inside this
+            browser, with no upload and no server.
           </p>
         </div>
 
-        <h3>Master resume, read for your details</h3>
-
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a resume file">
-          <p class="drop-title">Drop your resume here</p>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add a resume">
+          <p class="drop-title">Drop a resume here</p>
           <p class="drop-sub">PDF, DOCX or TXT, or <button class="link" id="browse">choose a file</button></p>
           <input type="file" id="file" accept=".pdf,.docx,.txt,.md,application/pdf" hidden />
         </div>
 
         <details class="paste">
           <summary>No file handy? Paste the text instead</summary>
-          <textarea id="paste-text" rows="8" placeholder="Paste your resume text…"></textarea>
+          <textarea id="paste-text" rows="8" placeholder="Paste your resume text..."></textarea>
           <button class="ghost" id="parse-text">Read this text</button>
         </details>
 
         <div id="resume-result" class="result" hidden></div>
 
-        <h3>File to attach to applications</h3>
-        <p class="fine" id="attachment-state">Nothing attached yet.</p>
-        <div class="row-actions">
-          <button class="ghost" id="choose-attachment">Choose a file</button>
-          <button class="ghost" id="attach-master">Use my master resume</button>
-          <button class="danger" id="drop-attachment">Remove</button>
-          <input type="file" id="attachment-file" accept=".pdf,.docx,.txt,.md,application/pdf" hidden />
-        </div>
+        <h3>Saved resumes</h3>
+        <div id="resume-list" class="answers"></div>
+
       </section>
 
       <section id="panel-profile" class="panel" hidden>

@@ -4,7 +4,7 @@ import { comboboxSelection } from './scanner.ts';
 import { expandPlace, isPlace } from '../lib/matching/places.ts';
 import { parsePhone, renderPhone } from '../lib/values/phone.ts';
 import { shapeValue } from '../lib/values/shape.ts';
-import type { Answer, ResumeRecord, ScannedField } from '../shared/types.ts';
+import type { Answer, ScannedField } from '../shared/types.ts';
 
 export interface FillContext {
 
@@ -341,7 +341,7 @@ async function fillCombobox(field: ScannedField, value: string, answer?: Answer)
   return { ok: false, reason: `This dropdown has no option matching "${value}". Choose it by hand.` };
 }
 
-export async function attachFile(field: ScannedField, resume: ResumeRecord): Promise<FillOutcome> {
+export async function attachFile(field: ScannedField, resume: { name: string; type: string; dataUrl: string | null }): Promise<FillOutcome> {
   const input = field.el as HTMLInputElement;
   if (!resume?.dataUrl) return { ok: false, reason: 'No resume file saved' };
   if (input.files?.length) return { ok: false, reason: 'A file is already attached' };

@@ -1,6 +1,6 @@
 import type { Answer, AnswerType, Kind, Settings, State } from '../../shared/types.ts';
 
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 
 const TYPES: AnswerType[] = ['text', 'longtext', 'choice', 'multichoice', 'boolean', 'number', 'date', 'email', 'phone', 'url', 'file'];
 
@@ -251,8 +251,9 @@ function defaultState(): State {
     profile: {},
     answers: [],
     settings: defaultSettings(),
-    resume: null,
-    master: null,
+    resumes: [],
+    masterId: null,
+    attachmentId: null,
     stats: { filled: 0, learned: 0, applications: 0 },
     pendingReview: null,
     history: [],

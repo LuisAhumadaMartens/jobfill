@@ -50,9 +50,13 @@ Every site, including the supported boards, can be muted from the popup.
 - **Handles the markup ATSs actually ship**: `<label for>`, `aria-labelledby` on divs,
   placeholder-only fields, radio/checkbox fieldsets, custom comboboxes with a listbox,
   and applications embedded in an iframe on a careers page.
-- **Separates the resume it reads from the file it sends.** Your master resume can be as
-  long as you like, since it is only read for your details; the file attached to
-  applications is chosen separately and is usually shorter.
+- **Keeps as many resumes as you do.** One is read for your details and can be as long
+  as you like; another is the file employers receive and is usually shorter. Which does
+  which is yours to set, and they can be the same file.
+- **Shows what an import would change before it changes it.** Reading a resume lists
+  every difference against what you already have, with both sides side by side, and
+  applies only what you tick. Roles and schools it already knows are not offered again,
+  and nothing you edited by hand is quietly replaced.
 - **Keeps the whole resume**, not just the current job: every role with its dates and the
   skills named in it, every school, and your skills as a list. Forms that ask for several
   jobs, schools or references fill each one in order, including dates split across

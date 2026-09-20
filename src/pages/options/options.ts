@@ -4,6 +4,7 @@ import * as matcher from '../../lib/matching/matcher.ts';
 import { readResumeFile, readResumeText, type ParsedResume } from '../../lib/resume/reader.ts';
 import { ATS_HOSTS } from '../../lib/sites.ts';
 import { toEducationEntries, toWorkEntries } from '../../lib/answers/history.ts';
+import { applyImport, planImport, type ImportChange } from '../../lib/answers/import-review.ts';
 import type { Answer, State } from '../../shared/types.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -12,6 +13,7 @@ type Tab = (typeof TABS)[number];
 
 let state: State;
 let parsed: ParsedResume | null = null;
+let pending: ImportChange[] = [];
 let filter = '';
 let savedTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -38,79 +40,125 @@ function showTab(tab: Tab): void {
 async function handleResume(loader: () => Promise<ParsedResume> | ParsedResume): Promise<void> {
   const target = $('resume-result');
   target.hidden = false;
-  target.innerHTML = '<div class="card">Reading…</div>';
+  target.innerHTML = '<div class="card">Reading...</div>';
 
   try {
     parsed = await loader();
-    renderParsed(parsed);
+    pending = planImport(state, {
+      profile: parsed.profile,
+      history: toWorkEntries(parsed.experience),
+      education: toEducationEntries(parsed.education),
+      skills: parsed.skills
+    });
+    renderParsed(parsed, pending);
   } catch (error) {
     parsed = null;
+    pending = [];
     target.innerHTML = `<div class="card error">${escapeHtml(error instanceof Error ? error.message : String(error))}</div>`;
   }
 }
 
-function renderParsed(result: ParsedResume): void {
-  const rows = schema.PROFILE_FIELDS
-    .filter((field) => result.profile[field.key])
-    .map((field) => `<dt>${escapeHtml(field.label)}</dt><dd>${escapeHtml(result.profile[field.key])}</dd>`)
-    .join('');
-
-  const roles = result.experience
-    .slice(0, 4)
-    .map((role) => `<li>${escapeHtml(role.title)}, ${escapeHtml(role.company)}</li>`)
-    .join('');
+function renderParsed(result: ParsedResume, changes: ImportChange[]): void {
+  const rows = changes.map((change, index) => `
+    <label class="q pick" style="display:flex;gap:9px;align-items:flex-start;padding:9px 0">
+      <input type="checkbox" data-change="${index}" checked />
+      <span style="flex:1">
+        <strong>${escapeHtml(change.label)}</strong>
+        <span class="v" style="display:block;max-width:none">
+          ${change.before ? `${escapeHtml(change.before)} &rarr; ` : ''}${escapeHtml(change.after || 'added')}
+        </span>
+      </span>
+      <span class="pill">${change.action === 'add' ? 'new' : 'changed'}</span>
+    </label>`).join('');
 
   $('resume-result').innerHTML = `
     <div class="card">
-      <h4>What JobFill read from ${escapeHtml(result.name)}</h4>
-      <dl class="kv">${rows || '<dt>Nothing recognised</dt><dd>Fill your details in by hand on the Profile tab.</dd>'}</dl>
+      <h4>${escapeHtml(result.name)}</h4>
+      ${changes.length
+        ? `<p class="fine" style="margin:0 0 6px">Nothing is saved until you choose. Untick anything you would rather keep as it is.</p>${rows}`
+        : '<p class="fine" style="margin:0">Nothing here differs from what JobFill already has.</p>'}
       ${result.warnings.map((warning) => `<p class="note">${escapeHtml(warning)}</p>`).join('')}
     </div>
-    ${roles ? `<div class="card"><h4>Roles found</h4><ul>${roles}</ul></div>` : ''}
-    ${result.skills.length ? `<div class="card"><h4>Skills</h4><p>${escapeHtml(result.skills.slice(0, 24).join(', '))}</p></div>` : ''}
     <div class="row-actions">
-      <button class="primary" id="apply-resume">Use these details</button>
+      <button class="primary" id="apply-resume">${changes.length ? 'Save what is ticked' : 'Keep this resume'}</button>
       <button class="ghost" id="discard-resume">Discard</button>
     </div>`;
 
   $('apply-resume').addEventListener('click', () => void applyParsed());
   $('discard-resume').addEventListener('click', () => {
     parsed = null;
+    pending = [];
     $('resume-result').hidden = true;
   });
 }
 
 async function applyParsed(): Promise<void> {
   if (!parsed) return;
-  await storage.setProfile(parsed.profile);
-  await storage.setHistory(toWorkEntries(parsed.experience));
-  await storage.setEducation(toEducationEntries(parsed.education));
-  await storage.setSkills(parsed.skills);
-  await storage.setMaster({
+
+  const ticked = [...$('resume-result').querySelectorAll<HTMLInputElement>('input[data-change]')]
+    .filter((box) => box.checked)
+    .map((box) => pending[Number(box.dataset.change)]!)
+    .filter(Boolean);
+
+  const applied = applyImport(state, {
+    profile: parsed.profile,
+    history: toWorkEntries(parsed.experience),
+    education: toEducationEntries(parsed.education),
+    skills: parsed.skills
+  }, ticked);
+
+  await storage.setProfile(applied.profile);
+  await storage.setHistory(applied.history);
+  await storage.setEducation(applied.education);
+  await storage.setSkills(applied.skills);
+
+  await storage.addResume({
     name: parsed.name,
-    text: parsed.text,
-    parsedAt: parsed.parsedAt,
+    label: parsed.name.replace(/\.[a-z0-9]+$/i, ''),
     type: parsed.type,
     size: parsed.size,
-    dataUrl: parsed.dataUrl
+    dataUrl: parsed.dataUrl,
+    text: parsed.text,
+    parsedAt: parsed.parsedAt
   });
 
-  if (!state.resume && parsed.dataUrl) {
-    await storage.setResume({
-      name: parsed.name, type: parsed.type, size: parsed.size,
-      dataUrl: parsed.dataUrl, text: parsed.text, parsedAt: parsed.parsedAt
-    });
-  }
   state = await storage.load();
+  parsed = null;
+  pending = [];
+  $('resume-result').hidden = true;
+
   renderProfile();
   renderHistory();
   renderEducation();
   renderSkills();
-  renderAttachment();
+  renderResumes();
   renderAllRecords();
   renderAnswers();
-  flash('Profile updated');
-  showTab('profile');
+  flash(ticked.length ? `Saved ${ticked.length} change${ticked.length === 1 ? '' : 's'}` : 'Resume saved');
+}
+
+function renderResumes(): void {
+  const entries = state.resumes ?? [];
+
+  $('resume-list').innerHTML = entries.length
+    ? entries.map((entry) => `
+        <article class="answer" style="padding:12px 15px" data-resume="${entry.id}">
+          <div class="q">
+            <input type="text" data-role="label" value="${escapeHtml(entry.label || entry.name)}" aria-label="Name for this resume" />
+            ${entry.id === state.masterId ? '<span class="pill">details</span>' : ''}
+            ${entry.id === state.attachmentId ? '<span class="pill">attached</span>' : ''}
+          </div>
+          <div class="v" style="max-width:none">
+            ${escapeHtml(entry.name)}${entry.size ? ` &middot; ${Math.round(entry.size / 1024)} KB` : ''}
+            ${entry.dataUrl ? '' : ' &middot; text only, cannot be attached'}
+          </div>
+          <div class="actions" style="margin-top:10px">
+            ${entry.id === state.masterId ? '' : '<button class="ghost" data-master="1">Read details from this</button>'}
+            ${entry.id === state.attachmentId || !entry.dataUrl ? '' : '<button class="ghost" data-attach="1">Attach this one</button>'}
+            <button class="danger" data-drop="1">Remove</button>
+          </div>
+        </article>`).join('')
+    : '<p class="empty">No resumes yet. Drop one above.</p>';
 }
 
 function wireResumeInput(): void {
@@ -267,18 +315,6 @@ const RECORD_SHAPES = () => [
 
 function renderAllRecords(): void {
   for (const shape of RECORD_SHAPES()) renderRecords(shape);
-}
-
-function renderAttachment(): void {
-  const resume = state.resume;
-  const master = state.master;
-
-  $('attachment-state').innerHTML = resume
-    ? `Attaching <strong>${escapeHtml(resume.name)}</strong>${resume.size ? ` (${Math.round(resume.size / 1024)} KB)` : ''}.`
-    : 'Nothing attached yet. Applications asking for a file will be left for you.';
-
-  $<HTMLButtonElement>('drop-attachment').hidden = !resume;
-  $<HTMLButtonElement>('attach-master').hidden = !master || resume?.name === master.name;
 }
 
 function renderEducation(): void {
@@ -567,7 +603,7 @@ async function boot(): Promise<void> {
   renderHistory();
   renderEducation();
   renderSkills();
-  renderAttachment();
+  renderResumes();
   renderAllRecords();
   for (const shape of RECORD_SHAPES()) wireRecords(shape);
   renderAnswers();
@@ -580,69 +616,29 @@ async function boot(): Promise<void> {
 
   $('save-profile').addEventListener('click', () => void saveProfile());
 
-  $('choose-attachment').addEventListener('click', () => $<HTMLInputElement>('attachment-file').click());
-
-  $('attachment-file').addEventListener('change', async (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      await storage.setResume({
-        name: file.name,
-        type: file.type || 'application/octet-stream',
-        size: file.size,
-        dataUrl: String(reader.result),
-        text: '',
-        parsedAt: new Date().toISOString()
-      });
-      state = await storage.load();
-      renderAttachment();
-      flash('Attachment saved');
-    };
-    reader.readAsDataURL(file);
+  $('resume-list').addEventListener('change', async (event) => {
+    const input = event.target as HTMLInputElement;
+    const card = input.closest('[data-resume]') as HTMLElement | null;
+    if (!card || input.dataset.role !== 'label') return;
+    await storage.updateResume(card.dataset.resume!, { label: input.value.trim() });
+    state = await storage.load();
+    flash();
   });
 
-  $('attach-master').addEventListener('click', async () => {
-    const master = state.master;
-    if (!master?.dataUrl) {
-      flash('Import a master resume first');
-      return;
-    }
-    await storage.setResume({
-      name: master.name,
-      type: master.type ?? 'application/pdf',
-      size: master.size ?? 0,
-      dataUrl: master.dataUrl,
-      text: master.text,
-      parsedAt: master.parsedAt
-    });
-    state = await storage.load();
-    renderAttachment();
-    flash('Attaching your master resume');
-  });
+  $('resume-list').addEventListener('click', async (event) => {
+    const button = event.target as HTMLElement;
+    const card = button.closest('[data-resume]') as HTMLElement | null;
+    if (!card) return;
+    const id = card.dataset.resume!;
 
-  $('drop-attachment').addEventListener('click', async () => {
-    await storage.setResume(null);
-    state = await storage.load();
-    renderAttachment();
-    flash('Attachment removed');
-  });
+    if (button.dataset.master) await storage.setResumeRoles({ masterId: id });
+    else if (button.dataset.attach) await storage.setResumeRoles({ attachmentId: id });
+    else if (button.dataset.drop) await storage.removeResume(id);
+    else return;
 
-  $('education').addEventListener('click', async (event) => {
-    const index = (event.target as HTMLElement).dataset.removeEducation;
-    if (index === undefined) return;
-    await storage.setEducation((state.education ?? []).filter((_, position) => position !== Number(index)));
     state = await storage.load();
-    renderEducation();
-    flash('Removed');
-  });
-
-  $('save-skills').addEventListener('click', async () => {
-    const raw = $<HTMLTextAreaElement>('skills').value;
-    await storage.setSkills(raw.split(/[,\n]/));
-    state = await storage.load();
-    renderSkills();
-    flash('Skills saved');
+    renderResumes();
+    flash();
   });
 
   $('history').addEventListener('click', async (event) => {
@@ -694,7 +690,7 @@ async function boot(): Promise<void> {
   });
 
   const requested = location.hash.replace('#', '') as Tab;
-  showTab(TABS.includes(requested) ? requested : (state.resume ? 'answers' : 'resume'));
+  showTab(TABS.includes(requested) ? requested : (state.resumes.length ? 'answers' : 'resume'));
 }
 
 void boot();

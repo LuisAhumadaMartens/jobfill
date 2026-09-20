@@ -3,9 +3,9 @@ import * as S from './schema.ts';
 import { isUnitedStates } from '../matching/synonyms.ts';
 import { classify } from '../matching/matcher.ts';
 import { parsePhone } from '../values/phone.ts';
-import type { Answer, EducationEntry, MasterResume, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
+import type { Answer, EducationEntry, PendingReview, Profile, ReviewItem, Settings, State, StoredResume, WorkEntry } from '../../shared/types.ts';
 
-const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills', 'skillYears', 'references', 'languages', 'certifications', 'master'];
+const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'stats', 'pendingReview', 'history', 'education', 'skills', 'skillYears', 'references', 'languages', 'certifications', 'resumes', 'masterId', 'attachmentId'];
 
 interface Area {
   get(keys?: string[] | null): Promise<Record<string, unknown>>;
@@ -77,6 +77,38 @@ function seedAnswers(): Answer[] {
   return S.SEED_ANSWERS.map((seed) => makeAnswer(Object.assign({ source: 'seed' }, seed)));
 }
 
+interface LegacyResume { name: string; type?: string; size?: number; dataUrl?: string | null; text?: string; parsedAt?: string }
+
+function foldLegacyResumes(state: State & { resume?: LegacyResume | null; master?: LegacyResume | null }): State {
+  if (state.resumes.length) return state;
+
+  const resumes: StoredResume[] = [];
+  const carry = (legacy: LegacyResume | null | undefined, label: string): string | null => {
+    if (!legacy?.name) return null;
+    const existing = resumes.find((entry) => entry.name === legacy.name);
+    if (existing) return existing.id;
+
+    const record: StoredResume = {
+      id: uid('cv'),
+      name: legacy.name,
+      label,
+      type: legacy.type ?? 'application/pdf',
+      size: legacy.size ?? 0,
+      dataUrl: legacy.dataUrl ?? null,
+      text: legacy.text ?? '',
+      parsedAt: legacy.parsedAt ?? nowISO()
+    };
+    resumes.push(record);
+    return record.id;
+  };
+
+  const masterId = carry(state.master, 'Master');
+  const attachmentId = carry(state.resume, 'Attached');
+  if (!resumes.length) return state;
+
+  return { ...state, resumes, masterId: masterId ?? attachmentId, attachmentId: attachmentId ?? masterId };
+}
+
 function repair(state: State): State {
   const answers = state.answers.map((answer) => {
     let kind = answer.kind;
@@ -91,10 +123,11 @@ function repair(state: State): State {
     return kind === answer.kind && value === answer.value ? answer : { ...answer, kind, value };
   });
 
-  const profile = { ...state.profile };
+  const folded = foldLegacyResumes(state);
+  const profile = { ...folded.profile };
   if (profile.phone) profile.phone = parsePhone(profile.phone)?.e164 ?? profile.phone;
 
-  return { ...state, answers, profile, version: S.STORAGE_VERSION };
+  return { ...folded, answers, profile, version: S.STORAGE_VERSION };
 }
 
 async function load(): Promise<State> {
@@ -104,6 +137,7 @@ async function load(): Promise<State> {
   state.profile = state.profile || {};
   state.history = Array.isArray(state.history) ? state.history : [];
   state.education = Array.isArray(state.education) ? state.education : [];
+  state.resumes = Array.isArray(state.resumes) ? state.resumes : [];
   state.skills = Array.isArray(state.skills) ? state.skills : [];
   state.skillYears = Array.isArray(state.skillYears) ? state.skillYears : [];
   state.references = Array.isArray(state.references) ? state.references : [];
@@ -117,8 +151,19 @@ async function load(): Promise<State> {
   }
 
   if (state.version !== S.STORAGE_VERSION) {
-    const repaired = repair(state);
-    await area.set({ answers: repaired.answers, profile: repaired.profile, version: S.STORAGE_VERSION });
+
+    const legacy = await area.get(['resume', 'master']);
+    const repaired = repair({ ...state, ...legacy } as State);
+
+    await area.set({
+      answers: repaired.answers,
+      profile: repaired.profile,
+      resumes: repaired.resumes,
+      masterId: repaired.masterId,
+      attachmentId: repaired.attachmentId,
+      version: S.STORAGE_VERSION
+    });
+    await area.remove(['resume', 'master']);
     return repaired;
   }
 
@@ -360,14 +405,44 @@ async function setSkills(skills: string[]): Promise<string[]> {
   return unique;
 }
 
-async function setResume(resume: ResumeRecord | null): Promise<ResumeRecord | null> {
-  await patch({ resume });
-  return resume;
+async function addResume(input: Omit<StoredResume, 'id'>, roles: { master?: boolean; attachment?: boolean } = {}): Promise<StoredResume> {
+  const state = await load();
+  const record: StoredResume = { ...input, id: uid('cv') };
+  const resumes = [...state.resumes, record];
+
+  await patch({
+    resumes,
+    masterId: roles.master || !state.masterId ? record.id : state.masterId,
+    attachmentId: roles.attachment || !state.attachmentId ? record.id : state.attachmentId
+  });
+  return record;
 }
 
-async function setMaster(master: MasterResume | null): Promise<MasterResume | null> {
-  await patch({ master });
-  return master;
+async function updateResume(id: string, update: Partial<StoredResume>): Promise<void> {
+  const state = await load();
+  await patch({ resumes: state.resumes.map((entry) => (entry.id === id ? { ...entry, ...update, id } : entry)) });
+}
+
+async function removeResume(id: string): Promise<void> {
+  const state = await load();
+  const resumes = state.resumes.filter((entry) => entry.id !== id);
+  await patch({
+    resumes,
+    masterId: state.masterId === id ? resumes[0]?.id ?? null : state.masterId,
+    attachmentId: state.attachmentId === id ? resumes[0]?.id ?? null : state.attachmentId
+  });
+}
+
+async function setResumeRoles(roles: { masterId?: string | null; attachmentId?: string | null }): Promise<void> {
+  await patch(roles);
+}
+
+export function attachmentOf(state: Pick<State, 'resumes' | 'attachmentId'>): StoredResume | null {
+  return state.resumes.find((entry) => entry.id === state.attachmentId) ?? null;
+}
+
+export function masterOf(state: Pick<State, 'resumes' | 'masterId'>): StoredResume | null {
+  return state.resumes.find((entry) => entry.id === state.masterId) ?? null;
 }
 
 export interface ExportPayload extends Partial<Omit<State, 'resume'>> {
@@ -390,10 +465,7 @@ async function exportAll(): Promise<ExportPayload> {
     references: state.references,
     languages: state.languages,
     certifications: state.certifications,
-    master: state.master
-      ? { name: state.master.name, text: state.master.text, parsedAt: state.master.parsedAt }
-      : null,
-    resume: state.resume ? { name: state.resume.name, text: state.resume.text, parsedAt: state.resume.parsedAt } : null
+    resumes: state.resumes.map((entry) => ({ ...entry, dataUrl: null }))
   };
 }
 
@@ -435,7 +507,7 @@ async function importAll(payload: ExportPayload, options?: { merge?: boolean }):
     answers,
     profile,
     settings,
-    master: payload.master ?? (merge ? state.master : null),
+    resumes: payload.resumes?.length ? payload.resumes : (merge ? state.resumes : []),
     history: collection('history'),
     education: collection('education'),
     skills: collection('skills'),
@@ -466,7 +538,8 @@ async function setHostDisabled(host: string, disabled: boolean): Promise<Setting
 
 export {
   KEYS, uid, makeAnswer, seedAnswers, load, patch, getAnswers, getSettings, setSettings,
-  upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile, setResume,
-  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills, setRecords, setMaster,
+  upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile,
+  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills, setRecords,
+  addResume, updateResume, removeResume, setResumeRoles,
   exportAll, importAll, clearAll, isHostDisabled, setHostDisabled
 };

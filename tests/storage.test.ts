@@ -68,12 +68,12 @@ test('usage counts feed the ranking', async () => {
 });
 
 test('export leaves the resume binary behind, import merges by question', async () => {
-  await storage.setResume({ name: 'cv.pdf', type: 'application/pdf', size: 1024, dataUrl: 'data:application/pdf;base64,AAA', text: 'Ada', parsedAt: new Date().toISOString() });
+  await storage.addResume({ name: 'cv.pdf', label: 'CV', type: 'application/pdf', size: 1024, dataUrl: 'data:application/pdf;base64,AAA', text: 'Ada', parsedAt: new Date().toISOString() });
   await storage.upsertAnswer({ question: 'Favourite editor?', value: 'Neovim' });
 
   const exported = await storage.exportAll();
-  expect(exported.resume).not.toHaveProperty('dataUrl');
-  expect(exported.resume?.text).toBe('Ada');
+  expect(exported.resumes?.[0]?.dataUrl).toBeNull();
+  expect(exported.resumes?.[0]?.text).toBe('Ada');
 
   await storage.importAll(
     { answers: [{ question: 'Favourite editor?', value: 'Zed', aliases: ['Which editor?'] } as never] },
@@ -133,7 +133,7 @@ describe('repairing data written by an older build', () => {
     expect(phone.kind).toBe('phone');
     expect(phone.value).toBe('+17868306320');
     expect(state.profile.phone).toBe('+17868306320');
-    expect(state.version).toBe(2);
+    expect(state.version).toBe(3);
   });
 
   test('the repair runs once, not on every load', async () => {
@@ -204,41 +204,60 @@ describe('an export is a backup, not a fragment', () => {
   });
 
   test('the resume binary still stays out of it', async () => {
-    await storage.setResume({ name: 'cv.pdf', type: 'application/pdf', size: 10, dataUrl: 'data:application/pdf;base64,AAA', text: 'Ada', parsedAt: new Date().toISOString() });
+    await storage.addResume({ name: 'cv.pdf', label: 'CV', type: 'application/pdf', size: 10, dataUrl: 'data:application/pdf;base64,AAA', text: 'Ada', parsedAt: new Date().toISOString() });
     const dump = await storage.exportAll();
-    expect(dump.resume).not.toHaveProperty('dataUrl');
-    expect(dump.resume?.text).toBe('Ada');
+    expect(JSON.stringify(dump)).not.toContain('base64');
+    expect(dump.resumes?.[0]?.text).toBe('Ada');
   });
 });
 
-describe('the master resume and the file that gets attached', () => {
-  const master = () => storage.setMaster({
-    name: 'master.pdf', text: 'everything about me', parsedAt: new Date().toISOString(),
-    dataUrl: 'data:application/pdf;base64,AAA', type: 'application/pdf', size: 400
+describe('a library of resumes, with separate jobs', () => {
+  const add = (name: string, label: string) => storage.addResume({
+    name, label, type: 'application/pdf', size: 400,
+    dataUrl: `data:application/pdf;base64,${label}`, text: `text of ${label}`, parsedAt: new Date().toISOString()
   });
 
-  test('they are stored apart, so a short resume can be sent from a long one', async () => {
-    await master();
-    await storage.setResume({ name: 'tailored.pdf', type: 'application/pdf', size: 120, dataUrl: 'data:application/pdf;base64,BBB', text: '', parsedAt: new Date().toISOString() });
+  test('the first one added does both jobs', async () => {
+    const first = await add('master.pdf', 'Master');
+    const state = await storage.load();
+    expect(state.masterId).toBe(first.id);
+    expect(state.attachmentId).toBe(first.id);
+  });
+
+  test('a second can be attached while the first is still read for details', async () => {
+    const master = await add('master.pdf', 'Master');
+    const short = await add('tailored.pdf', 'Tailored');
+    await storage.setResumeRoles({ attachmentId: short.id });
 
     const state = await storage.load();
-    expect(state.master?.name).toBe('master.pdf');
-    expect(state.resume?.name).toBe('tailored.pdf');
-    expect(state.resume?.dataUrl).toContain('BBB');
+    expect(storage.masterOf(state)?.name).toBe('master.pdf');
+    expect(storage.attachmentOf(state)?.name).toBe('tailored.pdf');
+    expect(state.masterId).toBe(master.id);
   });
 
-  test('removing the attachment leaves the details behind', async () => {
-    await master();
-    await storage.setResume(null);
+  test('removing the attached one hands the job to another rather than leaving none', async () => {
+    await add('master.pdf', 'Master');
+    const short = await add('tailored.pdf', 'Tailored');
+    await storage.setResumeRoles({ attachmentId: short.id });
+    await storage.removeResume(short.id);
+
     const state = await storage.load();
-    expect(state.resume).toBeNull();
-    expect(state.master?.text).toBe('everything about me');
+    expect(state.resumes).toHaveLength(1);
+    expect(storage.attachmentOf(state)?.name).toBe('master.pdf');
   });
 
-  test('neither binary is exported', async () => {
-    await master();
-    const dump = await storage.exportAll();
-    expect(JSON.stringify(dump)).not.toContain('base64,AAA');
-    expect(dump.master?.text).toBe('everything about me');
+  test('a store written before the library had one is folded into it', async () => {
+    await storage.patch({
+      version: 2,
+      resumes: [],
+      master: { name: 'old-master.pdf', text: 'old text', parsedAt: new Date().toISOString() },
+      resume: { name: 'old-attached.pdf', type: 'application/pdf', size: 10, dataUrl: 'data:application/pdf;base64,OLD', text: '', parsedAt: new Date().toISOString() }
+    } as never);
+
+    const state = await storage.load();
+    expect(state.resumes).toHaveLength(2);
+    expect(storage.masterOf(state)?.name).toBe('old-master.pdf');
+    expect(storage.attachmentOf(state)?.name).toBe('old-attached.pdf');
+    expect(state.version).toBe(3);
   });
 });

@@ -71,8 +71,9 @@ function planFor(field: ScannedField, current: State): FieldPlan {
   if (field.control === 'file') {
     const wantsResume = field.kind === 'resumeFile' || /resume|cv/i.test(field.name + field.label);
     if (existing) return { ...base, status: 'filled', value: existing };
-    if (wantsResume && current.resume?.dataUrl && current.settings.autoAttachResume) {
-      return { ...base, status: 'ready', answerId: RESUME_ANSWER, value: current.resume.name, reason: 'saved resume' };
+    const attachment = storage.attachmentOf(current);
+    if (wantsResume && attachment?.dataUrl && current.settings.autoAttachResume) {
+      return { ...base, status: 'ready', answerId: RESUME_ANSWER, value: attachment.name, reason: 'saved resume' };
     }
     return { ...base, status: 'unknown', note: 'Upload a resume in JobFill’s options to attach it automatically.' };
   }
@@ -277,8 +278,10 @@ async function fillOne(uid: string, answerId?: string, value?: string): Promise<
   const plan = planOf(uid);
   if (!field || !state || !plan) return false;
 
-  if (answerId === RESUME_ANSWER || (field.control === 'file' && state.resume)) {
-    const outcome = await filler.attachFile(field, state.resume!);
+  const attachment = storage.attachmentOf(state);
+  if (answerId === RESUME_ANSWER || (field.control === 'file' && attachment)) {
+    if (!attachment) return false;
+    const outcome = await filler.attachFile(field, attachment);
     plan.status = outcome.ok ? 'filled' : 'failed';
     plan.note = outcome.reason;
     plan.value = outcome.applied;
