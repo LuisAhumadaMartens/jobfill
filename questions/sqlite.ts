@@ -2,8 +2,8 @@ import { Database } from 'bun:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BOARDS, COUNTS, GATED, GROUPS, INSERT, PUBLISHED, bindingsFor, withOptions } from './store.ts';
-import type { AtlasRow, Board, Store, Totals } from './store.ts';
-import type { Report } from '../src/shared/atlas.ts';
+import type { QuestionRow, Board, Store, Totals } from './store.ts';
+import type { Report } from '../src/shared/questions.ts';
 
 export class SqliteStore implements Store {
   private readonly db: Database;
@@ -29,9 +29,9 @@ export class SqliteStore implements Store {
     return write(bindingsFor(report));
   }
 
-  async published(threshold: number): Promise<AtlasRow[]> {
+  async published(threshold: number): Promise<QuestionRow[]> {
     return withOptions(this.db.prepare(PUBLISHED)
-      .all(threshold) as Array<Omit<AtlasRow, 'options'> & { options: string }>);
+      .all(threshold) as Array<Omit<QuestionRow, 'options'> & { options: string }>);
   }
 
   async boards(threshold: number): Promise<Board[]> {

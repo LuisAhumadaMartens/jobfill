@@ -1,18 +1,18 @@
 import { ATS_HOSTS } from '../lib/sites.ts';
 
-export const ATLAS_SCHEMA = 1;
+export const REPORT_SCHEMA = 1;
 
-export type AtlasControl =
+export type QuestionControl =
   | 'input' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'combobox' | 'contenteditable';
 
-export type AtlasOutcome = 'unmatched' | 'unsure' | 'no-option' | 'cleared' | 'replaced';
+export type QuestionOutcome = 'unmatched' | 'unsure' | 'no-option' | 'cleared' | 'replaced';
 
 export interface Observation {
   ats: string;
-  control: AtlasControl;
+  control: QuestionControl;
   question: string;
   options: string[];
-  outcome: AtlasOutcome;
+  outcome: QuestionOutcome;
   kind: string | null;
   confidence: number | null;
 }
@@ -33,11 +33,11 @@ export const LIMITS = {
   kind: 40
 } as const;
 
-const CONTROLS: ReadonlySet<string> = new Set<AtlasControl>([
+const CONTROLS: ReadonlySet<string> = new Set<QuestionControl>([
   'input', 'textarea', 'select', 'radio', 'checkbox', 'combobox', 'contenteditable'
 ]);
 
-const OUTCOMES: ReadonlySet<string> = new Set<AtlasOutcome>([
+const OUTCOMES: ReadonlySet<string> = new Set<QuestionOutcome>([
   'unmatched', 'unsure', 'no-option', 'cleared', 'replaced'
 ]);
 
@@ -132,10 +132,10 @@ export function validateObservation(input: unknown): Check<Observation> {
     ok: true,
     value: {
       ats: value.ats,
-      control: value.control as AtlasControl,
+      control: value.control as QuestionControl,
       question,
       options,
-      outcome: value.outcome as AtlasOutcome,
+      outcome: value.outcome as QuestionOutcome,
       kind: value.kind as string | null,
       confidence: value.confidence === null ? null : Math.round((value.confidence as number) * 1000) / 1000
     }
@@ -149,7 +149,7 @@ export function validateReport(input: unknown): Check<Report> {
   const extra = onlyKeys(value, KEYS_REPORT, 'report');
   if (extra) return fail(extra);
 
-  if (value.schema !== ATLAS_SCHEMA) return fail('report is not this schema');
+  if (value.schema !== REPORT_SCHEMA) return fail('report is not this schema');
   if (typeof value.session !== 'string' || !/^[0-9a-f]{32}$/.test(value.session)) return fail('session is not a token');
   if (typeof value.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.day)) return fail('day is not a date');
   if (typeof value.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(value.version)) return fail('version is not a version');
@@ -165,5 +165,5 @@ export function validateReport(input: unknown): Check<Report> {
     observations.push(checked.value);
   }
 
-  return { ok: true, value: { schema: ATLAS_SCHEMA, session: value.session, day: value.day, version: value.version, observations } };
+  return { ok: true, value: { schema: REPORT_SCHEMA, session: value.session, day: value.day, version: value.version, observations } };
 }

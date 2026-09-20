@@ -5,8 +5,8 @@ import { routes } from './routes.ts';
 
 export interface Env {
   DB: D1Database;
-  ATLAS_THRESHOLD?: string;
-  ATLAS_RATE?: string;
+  QUESTIONS_THRESHOLD?: string;
+  QUESTIONS_RATE?: string;
 }
 
 export default {
@@ -14,8 +14,8 @@ export default {
     const app = new Elysia({ adapter: CloudflareAdapter })
       .use(routes({
         store: new D1Store(env.DB),
-        threshold: Number(env.ATLAS_THRESHOLD ?? 5),
-        perMinute: Number(env.ATLAS_RATE ?? 30)
+        threshold: Number(env.QUESTIONS_THRESHOLD ?? 5),
+        perMinute: Number(env.QUESTIONS_RATE ?? 30)
       }))
       .compile();
 

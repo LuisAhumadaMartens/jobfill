@@ -1,8 +1,8 @@
 import { area } from '../answers/storage.ts';
-import { LIMITS, type Observation } from '../../shared/atlas.ts';
+import { LIMITS, type Observation } from '../../shared/questions.ts';
 
-const KEY = 'atlasQueue';
-const CONSENT = 'atlasConsent';
+const KEY = 'questionQueue';
+const CONSENT = 'questionConsent';
 
 export const QUEUE_CAP = 200;
 

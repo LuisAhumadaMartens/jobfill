@@ -1,18 +1,18 @@
-name: Atlas
+name: Questions
 
 on:
   push:
     branches: [main]
     paths:
-      - 'atlas/**'
-      - 'src/shared/atlas.ts'
-      - '.github/workflows/atlas.yml'
+      - 'questions/**'
+      - 'src/shared/questions.ts'
+      - '.github/workflows/questions.yml'
   schedule:
     - cron: '17 5 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: atlas
+  group: questions
   cancel-in-progress: false
 
 jobs:
@@ -33,13 +33,13 @@ jobs:
 
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun test tests/atlas.test.ts tests/atlas-d1.test.ts tests/atlas-server.test.ts
+      - run: bun test tests/questions.test.ts tests/questions-d1.test.ts tests/questions-server.test.ts
 
       - name: Apply the schema
-        run: bunx wrangler d1 execute jobfill-atlas --remote --yes --file=atlas/schema.sql --config atlas/wrangler.toml
+        run: bunx wrangler d1 execute jobfill-questions --remote --yes --file=questions/schema.sql --config questions/wrangler.toml
 
       - name: Deploy the worker
-        run: bunx wrangler deploy --config atlas/wrangler.toml
+        run: bunx wrangler deploy --config questions/wrangler.toml
 
   export:
     if: github.event_name != 'push'
@@ -52,8 +52,8 @@ jobs:
       - name: Take a copy of what is published
         run: |
           mkdir -p data
-          curl -sfS --max-time 60 https://atlas.jobfill.app/v1/atlas | python3 -m json.tool > data/lexicon.json
-          curl -sfS --max-time 60 https://atlas.jobfill.app/v1/atlas.csv > data/lexicon.csv
+          curl -sfS --max-time 60 https://questions.jobfill.app/v1/questions | python3 -m json.tool > data/lexicon.json
+          curl -sfS --max-time 60 https://questions.jobfill.app/v1/questions.csv > data/lexicon.csv
 
       - name: Commit it if it changed
         run: |

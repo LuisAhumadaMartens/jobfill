@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { unlinkSync } from 'node:fs';
-import { SqliteStore } from '../atlas/sqlite.ts';
-import { questionKey } from '../atlas/store.ts';
-import type { AtlasRow } from '../atlas/store.ts';
-import { RateLimit } from '../atlas/limit.ts';
-import { ATLAS_SCHEMA, type Observation, type Report } from '../src/shared/atlas.ts';
+import { SqliteStore } from '../questions/sqlite.ts';
+import { questionKey } from '../questions/store.ts';
+import type { QuestionRow } from '../questions/store.ts';
+import { RateLimit } from '../questions/limit.ts';
+import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/questions.ts';
 
-const DB = `/tmp/atlas-test-${crypto.randomUUID()}.sqlite`;
-let atlas: SqliteStore;
+const DB = `/tmp/questions-test-${crypto.randomUUID()}.sqlite`;
+let store: SqliteStore;
 
 function observation(over: Partial<Observation> = {}): Observation {
   return {
@@ -17,39 +17,39 @@ function observation(over: Partial<Observation> = {}): Observation {
 }
 
 function report(session: string, observations: Observation[]): Report {
-  return { schema: ATLAS_SCHEMA, session, day: '2026-09-19', version: '0.1.5', observations };
+  return { schema: REPORT_SCHEMA, session, day: '2026-09-19', version: '0.1.5', observations };
 }
 
 function session(): string {
   return crypto.randomUUID().replace(/-/g, '');
 }
 
-beforeAll(() => { atlas = new SqliteStore(DB); });
-afterAll(() => { atlas.close(); try { unlinkSync(DB); } catch {} });
+beforeAll(() => { store = new SqliteStore(DB); });
+afterAll(() => { store.close(); try { unlinkSync(DB); } catch {} });
 
 describe('recording reports', () => {
   test('a report is stored and counted', async () => {
-    expect(await atlas.record(report(session(), [observation()]))).toBe(1);
+    expect(await store.record(report(session(), [observation()]))).toBe(1);
   });
 
   test('one session cannot inflate the count by sending twice', async () => {
     const token = session();
     const same = report(token, [observation({ question: 'Why do you want to join us?' })]);
-    expect(await atlas.record(same)).toBe(1);
-    expect(await atlas.record(same)).toBe(0);
+    expect(await store.record(same)).toBe(1);
+    expect(await store.record(same)).toBe(0);
   });
 
   test('a question is held back until enough separate sessions have seen it', async () => {
     const question = 'Do you have experience leading a team?';
-    const published = async (): Promise<AtlasRow[]> =>
-      (await atlas.published(5)).filter((row) => row.question === question);
+    const published = async (): Promise<QuestionRow[]> =>
+      (await store.published(5)).filter((row) => row.question === question);
 
     for (let count = 1; count < 5; count += 1) {
-      await atlas.record(report(session(), [observation({ question })]));
+      await store.record(report(session(), [observation({ question })]));
       expect(await published()).toHaveLength(0);
     }
 
-    await atlas.record(report(session(), [observation({ question })]));
+    await store.record(report(session(), [observation({ question })]));
     const rows = await published();
     expect(rows).toHaveLength(1);
     expect(rows[0]!.sessions).toBe(5);
@@ -64,7 +64,7 @@ describe('recording reports', () => {
   });
 
   test('totals separate what is published from what is held', async () => {
-    const totals = await atlas.totals(5);
+    const totals = await store.totals(5);
     expect(totals.published).toBeGreaterThan(0);
     expect(totals.held).toBeGreaterThan(0);
     expect(totals.observations).toBeGreaterThan(totals.published);
@@ -75,19 +75,19 @@ describe('the ingest endpoint', () => {
   let app: { handle: (request: Request) => Promise<Response> };
 
   beforeAll(async () => {
-    Bun.env.ATLAS_DB = `/tmp/atlas-http-${crypto.randomUUID()}.sqlite`;
-    Bun.env.ATLAS_THRESHOLD = '2';
-    Bun.env.ATLAS_RATE = '500';
-    app = (await import('../atlas/server.ts')).app;
+    Bun.env.QUESTIONS_DB = `/tmp/questions-http-${crypto.randomUUID()}.sqlite`;
+    Bun.env.QUESTIONS_THRESHOLD = '2';
+    Bun.env.QUESTIONS_RATE = '500';
+    app = (await import('../questions/server.ts')).app;
   });
 
-  const post = (body: unknown, raw?: string) => app.handle(new Request('http://atlas.test/v1/reports', {
+  const post = (body: unknown, raw?: string) => app.handle(new Request('http://questions.test/v1/reports', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: raw ?? JSON.stringify(body)
   }));
 
-  const get = (path: string) => app.handle(new Request(`http://atlas.test${path}`));
+  const get = (path: string) => app.handle(new Request(`http://questions.test${path}`));
 
   test('a valid report is accepted', async () => {
     const response = await post(report(session(), [observation()]));
@@ -117,7 +117,7 @@ describe('the ingest endpoint', () => {
     const token = session();
     await post(report(token, [observation({ question: 'Which timezone do you work from?' })]));
 
-    const body = await (await get('/v1/atlas')).text();
+    const body = await (await get('/v1/questions')).text();
     expect(body).not.toContain(token);
     expect(/[0-9a-f]{32}/.test(body)).toBe(false);
     expect(JSON.parse(body).totals.sessions).toBeGreaterThan(0);
@@ -128,7 +128,7 @@ describe('the ingest endpoint', () => {
     const token = session();
     await post(report(token, [observation({ question: 'Which timezone do you work from?' })]));
 
-    const response = await get('/v1/atlas.csv');
+    const response = await get('/v1/questions.csv');
     expect(response.headers.get('content-type')).toContain('text/csv');
 
     const body = await response.text();
@@ -139,7 +139,7 @@ describe('the ingest endpoint', () => {
 
   test('the dashboard renders and says what is never collected', async () => {
     const page = await (await get('/')).text();
-    expect(page).toContain('JobFill Atlas');
+    expect(page).toContain('JobFill Questions');
     expect(page).toContain('Never collected');
   });
 });

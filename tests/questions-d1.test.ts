@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { D1Store, type D1Database } from '../atlas/d1.ts';
-import { questionKey } from '../atlas/store.ts';
-import { ATLAS_SCHEMA, type Observation, type Report } from '../src/shared/atlas.ts';
+import { D1Store, type D1Database } from '../questions/d1.ts';
+import { questionKey } from '../questions/store.ts';
+import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/questions.ts';
 
 interface Call {
   query: string;
@@ -48,7 +48,7 @@ function observation(over: Partial<Observation> = {}): Observation {
 }
 
 function report(observations: Observation[]): Report {
-  return { schema: ATLAS_SCHEMA, session: 'a'.repeat(32), day: '2026-09-19', version: '0.1.5', observations };
+  return { schema: REPORT_SCHEMA, session: 'a'.repeat(32), day: '2026-09-19', version: '0.1.5', observations };
 }
 
 describe('the D1 store', () => {

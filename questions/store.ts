@@ -1,6 +1,6 @@
-import type { Report } from '../src/shared/atlas.ts';
+import type { Report } from '../src/shared/questions.ts';
 
-export interface AtlasRow {
+export interface QuestionRow {
   ats: string;
   question: string;
   control: string;
@@ -29,7 +29,7 @@ export interface Totals {
 
 export interface Store {
   record(report: Report): Promise<number>;
-  published(threshold: number): Promise<AtlasRow[]>;
+  published(threshold: number): Promise<QuestionRow[]>;
   boards(threshold: number): Promise<Board[]>;
   totals(threshold: number): Promise<Totals>;
 }
@@ -96,6 +96,6 @@ export function bindingsFor(report: Report): unknown[][] {
   ]);
 }
 
-export function withOptions(rows: Array<Omit<AtlasRow, 'options'> & { options: string }>): AtlasRow[] {
+export function withOptions(rows: Array<Omit<QuestionRow, 'options'> & { options: string }>): QuestionRow[] {
   return rows.map((row) => ({ ...row, options: JSON.parse(row.options) as string[] }));
 }

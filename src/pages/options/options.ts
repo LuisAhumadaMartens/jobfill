@@ -5,9 +5,9 @@ import { readResumeFile, readResumeText, type ParsedResume } from '../../lib/res
 import { ATS_HOSTS } from '../../lib/sites.ts';
 import { toEducationEntries, toWorkEntries } from '../../lib/answers/history.ts';
 import { applyImport, planImport, type ImportChange } from '../../lib/answers/import-review.ts';
-import * as queue from '../../lib/atlas/queue.ts';
-import { ATLAS_ORIGIN, askPermission, hasPermission, sendQueue } from '../../lib/atlas/send.ts';
-import type { Observation } from '../../shared/atlas.ts';
+import * as queue from '../../lib/questions/queue.ts';
+import { QUESTIONS_ORIGIN, askPermission, hasPermission, sendQueue } from '../../lib/questions/send.ts';
+import type { Observation } from '../../shared/questions.ts';
 import type { Answer, State } from '../../shared/types.ts';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -363,18 +363,18 @@ async function renderContribute(): Promise<void> {
   waiting = await queue.readQueue();
   consent = await queue.readConsent();
 
-  $('atlas-gate').textContent =
+  $('questions-gate').textContent =
     'A question stays private until five separate reports have seen it, so a question one company wrote for one person never reaches the public page.';
 
-  $('atlas-queue').innerHTML = waiting.length
+  $('questions-queue').innerHTML = waiting.length
     ? waiting.map((observation, index) => `
         <article class="entry">
           <div class="entry-main">
-            <div class="atlas-q">${escapeHtml(observation.question)}</div>
+            <div class="questions-q">${escapeHtml(observation.question)}</div>
             <div class="entry-meta">
               ${escapeHtml(observation.ats)} &middot; ${escapeHtml(observation.control)} &middot; ${escapeHtml(OUTCOMES[observation.outcome] ?? observation.outcome)}
             </div>
-            ${observation.options.length ? `<div class="atlas-opts">${observation.options.map(escapeHtml).join(' &middot; ')}</div>` : ''}
+            ${observation.options.length ? `<div class="questions-opts">${observation.options.map(escapeHtml).join(' &middot; ')}</div>` : ''}
           </div>
           <div class="entry-actions">
             <button class="danger" data-forget="${index}">Forget</button>
@@ -382,26 +382,26 @@ async function renderContribute(): Promise<void> {
         </article>`).join('')
     : '<p class="empty">Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.</p>';
 
-  $<HTMLButtonElement>('atlas-send').disabled = !waiting.length;
-  $<HTMLButtonElement>('atlas-copy').disabled = !waiting.length;
-  $<HTMLButtonElement>('atlas-clear').disabled = !waiting.length;
+  $<HTMLButtonElement>('questions-send').disabled = !waiting.length;
+  $<HTMLButtonElement>('questions-copy').disabled = !waiting.length;
+  $<HTMLButtonElement>('questions-clear').disabled = !waiting.length;
 
-  $('atlas-settings').innerHTML = `
+  $('questions-settings').innerHTML = `
     <label class="setting">
-      <input type="checkbox" id="atlas-collect" ${consent.askAfterApplying ? 'checked' : ''} />
+      <input type="checkbox" id="questions-collect" ${consent.askAfterApplying ? 'checked' : ''} />
       <span class="text">
         <strong>Keep questions JobFill could not answer</strong>
         <span>Held in this browser and shown above. Nothing is sent until you press send.</span>
       </span>
     </label>`;
 
-  $('atlas-status').textContent = consent.sentTotal
+  $('questions-status').textContent = consent.sentTotal
     ? `${consent.sentTotal} question${consent.sentTotal === 1 ? '' : 's'} sent so far, last on ${new Date(consent.lastSentAt ?? '').toLocaleDateString()}.`
     : 'Nothing has been sent from this browser.';
 }
 
 async function sendContributions(): Promise<void> {
-  const origin = ATLAS_ORIGIN;
+  const origin = QUESTIONS_ORIGIN;
 
   if (!(await hasPermission(origin))) {
     const granted = await askPermission(origin);
@@ -421,7 +421,7 @@ async function sendContributions(): Promise<void> {
 }
 
 function wireContribute(): void {
-  $('atlas-queue').addEventListener('click', async (event) => {
+  $('questions-queue').addEventListener('click', async (event) => {
     const index = (event.target as HTMLElement).dataset.forget;
     if (index === undefined) return;
     const observation = waiting[Number(index)];
@@ -430,22 +430,22 @@ function wireContribute(): void {
     flash('Forgotten');
   });
 
-  $('atlas-send').addEventListener('click', () => void sendContributions());
+  $('questions-send').addEventListener('click', () => void sendContributions());
 
-  $('atlas-copy').addEventListener('click', async () => {
+  $('questions-copy').addEventListener('click', async () => {
     await navigator.clipboard.writeText(JSON.stringify(waiting, null, 2));
     flash('Copied');
   });
 
-  $('atlas-clear').addEventListener('click', async () => {
+  $('questions-clear').addEventListener('click', async () => {
     await queue.clearQueue();
     await renderContribute();
     flash('Discarded');
   });
 
-  $('atlas-settings').addEventListener('change', async (event) => {
+  $('questions-settings').addEventListener('change', async (event) => {
     const input = event.target as HTMLInputElement;
-    if (input.id !== 'atlas-collect') return;
+    if (input.id !== 'questions-collect') return;
     await queue.writeConsent({ askAfterApplying: input.checked });
     flash();
   });

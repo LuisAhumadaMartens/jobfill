@@ -1,6 +1,6 @@
 import { BOARDS, COUNTS, GATED, GROUPS, INSERT, PUBLISHED, bindingsFor, withOptions } from './store.ts';
-import type { AtlasRow, Board, Store, Totals } from './store.ts';
-import type { Report } from '../src/shared/atlas.ts';
+import type { QuestionRow, Board, Store, Totals } from './store.ts';
+import type { Report } from '../src/shared/questions.ts';
 
 interface D1Result<T = unknown> {
   results: T[];
@@ -28,9 +28,9 @@ export class D1Store implements Store {
     return results.reduce((total, result) => total + (result.meta.changes ?? 0), 0);
   }
 
-  async published(threshold: number): Promise<AtlasRow[]> {
+  async published(threshold: number): Promise<QuestionRow[]> {
     const { results } = await this.db.prepare(PUBLISHED).bind(threshold)
-      .all<Omit<AtlasRow, 'options'> & { options: string }>();
+      .all<Omit<QuestionRow, 'options'> & { options: string }>();
     return withOptions(results);
   }
 

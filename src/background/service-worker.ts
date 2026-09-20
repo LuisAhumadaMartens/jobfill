@@ -2,8 +2,8 @@ import * as storage from '../lib/answers/storage.ts';
 import { sendToTab } from '../shared/messages.ts';
 import { BADGE_ATTENTION, BADGE_READY, CONTENT_SCRIPT } from '../shared/paths.ts';
 import type { FrameReport, ReportAck, TabSnapshot, ToBackground, ToContent } from '../shared/messages.ts';
-import { observationsFor } from '../lib/atlas/collect.ts';
-import { enqueue, readConsent } from '../lib/atlas/queue.ts';
+import { observationsFor } from '../lib/questions/collect.ts';
+import { enqueue, readConsent } from '../lib/questions/queue.ts';
 import { load } from '../lib/answers/storage.ts';
 import type { FieldPlan } from '../shared/types.ts';
 

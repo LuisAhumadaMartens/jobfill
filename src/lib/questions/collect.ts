@@ -1,14 +1,14 @@
 import { atsFor } from '../sites.ts';
-import { isCollectable, type AtlasControl, type AtlasOutcome, type Observation } from '../../shared/atlas.ts';
+import { isCollectable, type QuestionControl, type QuestionOutcome, type Observation } from '../../shared/questions.ts';
 import type { ControlKind, FieldPlan, Profile } from '../../shared/types.ts';
 
-const OUTCOMES: Partial<Record<FieldPlan['status'], AtlasOutcome>> = {
+const OUTCOMES: Partial<Record<FieldPlan['status'], QuestionOutcome>> = {
   unknown: 'unmatched',
   suggest: 'unsure',
   failed: 'cleared'
 };
 
-const CONTROLS: Partial<Record<ControlKind, AtlasControl>> = {
+const CONTROLS: Partial<Record<ControlKind, QuestionControl>> = {
   input: 'input',
   textarea: 'textarea',
   select: 'select',

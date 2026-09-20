@@ -1,8 +1,8 @@
-import { ATLAS_SCHEMA, LIMITS, type Observation, type Report } from '../../shared/atlas.ts';
+import { REPORT_SCHEMA, LIMITS, type Observation, type Report } from '../../shared/questions.ts';
 import { batches, readConsent, readQueue, writeConsent, writeQueue } from './queue.ts';
 
-export const ATLAS_ORIGIN = 'https://atlas.jobfill.app';
-export const ATLAS_DEV_ORIGIN = 'http://localhost:3100';
+export const QUESTIONS_ORIGIN = 'https://questions.jobfill.app';
+export const QUESTIONS_DEV_ORIGIN = 'http://localhost:3100';
 
 export interface SendResult {
   sent: number;
@@ -19,7 +19,7 @@ function today(): string {
 }
 
 export function reportFor(observations: Observation[], version: string): Report {
-  return { schema: ATLAS_SCHEMA, session: token(), day: today(), version, observations };
+  return { schema: REPORT_SCHEMA, session: token(), day: today(), version, observations };
 }
 
 export async function hasPermission(origin: string): Promise<boolean> {
@@ -42,7 +42,7 @@ export async function send(origin: string, observations: Observation[], version:
 
     if (!response) {
       result.kept += batch.length;
-      result.refused.push('could not reach the atlas');
+      result.refused.push('could not reach the question bank');
       break;
     }
 

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  ATLAS_SCHEMA, isCollectable, holdsPersonalData, isProtectedQuestion,
+  REPORT_SCHEMA, isCollectable, holdsPersonalData, isProtectedQuestion,
   validateObservation, validateReport, type Observation, type Report
-} from '../src/shared/atlas.ts';
+} from '../src/shared/questions.ts';
 
 function observation(over: Partial<Observation> = {}): Observation {
   return {
@@ -19,7 +19,7 @@ function observation(over: Partial<Observation> = {}): Observation {
 
 function report(over: Partial<Report> = {}): Report {
   return {
-    schema: ATLAS_SCHEMA,
+    schema: REPORT_SCHEMA,
     session: 'a'.repeat(32),
     day: '2026-09-19',
     version: '0.1.5',
