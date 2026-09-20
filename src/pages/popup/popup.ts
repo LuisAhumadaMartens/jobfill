@@ -26,13 +26,20 @@ function allPlans(): FieldPlan[] {
   return snapshot ? snapshot.frames.flatMap((frame) => frame.plans) : [];
 }
 
+let tabId: number | undefined;
+
 async function currentTab(): Promise<chrome.tabs.Tab | undefined> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
+  const [focused] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (focused) return focused;
+
+  const [current] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return current;
 }
 
 async function readSite(): Promise<void> {
   const tab = await currentTab();
+  tabId = tab?.id;
+
   if (!tab?.url || !/^https?:/.test(tab.url)) {
     host = '';
     return;
@@ -126,7 +133,7 @@ function renderQuick(): void {
 }
 
 async function refresh(): Promise<void> {
-  snapshot = await send<TabSnapshot>({ kind: 'get-tab-state' });
+  snapshot = await send<TabSnapshot>({ kind: 'get-tab-state', tabId });
   $('host').textContent = host || 'this page';
   renderSiteControls();
   renderCounts();
@@ -146,7 +153,7 @@ async function renderPendingReview(): Promise<void> {
 
 async function activate(): Promise<void> {
   setStatus('Starting…');
-  const result = await send<{ ok: boolean; reason?: string }>({ kind: 'activate' });
+  const result = await send<{ ok: boolean; reason?: string }>({ kind: 'activate', tabId });
   if (!result?.ok) {
     setStatus(result?.reason ?? 'Chrome will not let extensions run on this page.');
     return;
@@ -158,7 +165,7 @@ async function onPrimary(): Promise<void> {
   const counts = snapshot?.counts;
   if (counts?.ready) {
     setStatus('Filling…');
-    await send({ kind: 'fill-all' });
+    await send({ kind: 'fill-all', tabId });
     await refresh();
     return;
   }
@@ -192,7 +199,7 @@ $('primary').addEventListener('click', () => void onPrimary());
 $('always').addEventListener('change', () => void onAlwaysToggled());
 
 $('panel').addEventListener('click', async () => {
-  await send({ kind: 'toggle-panel' });
+  await send({ kind: 'toggle-panel', tabId });
   window.close();
 });
 
@@ -225,7 +232,8 @@ $('quick').addEventListener('click', async (event) => {
     frameId: Number(item.dataset.frame),
     uid: String(item.dataset.uid),
     value,
-    fill: true
+    fill: true,
+    tabId
   });
   item.remove();
   await refresh();

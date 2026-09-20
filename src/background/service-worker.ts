@@ -1,5 +1,5 @@
 import * as storage from '../lib/answers/storage.ts';
-import { sendToTab } from '../shared/messages.ts';
+import { resolveTabId, sendToTab } from '../shared/messages.ts';
 import { BADGE_ATTENTION, BADGE_READY, CONTENT_SCRIPT } from '../shared/paths.ts';
 import type { FrameReport, ReportAck, TabSnapshot, ToBackground, ToContent } from '../shared/messages.ts';
 import { observationsFor } from '../lib/dex/collect.ts';
@@ -114,8 +114,11 @@ async function paintBadge(tabId: number): Promise<void> {
 }
 
 async function activeTabId(): Promise<number | null> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab?.id ?? null;
+  const [focused] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (focused?.id !== undefined) return focused.id;
+
+  const [current] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return current?.id ?? null;
 }
 
 async function broadcast(tabId: number, message: ToContent): Promise<unknown[]> {
@@ -126,16 +129,19 @@ async function broadcast(tabId: number, message: ToContent): Promise<unknown[]> 
 }
 
 chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendResponse) => {
-  const tabId = ('tabId' in message ? message.tabId : undefined) ?? sender.tab?.id;
-
   const reply = async (): Promise<unknown> => {
-    if (!tabId) {
-      if (message.kind === 'open-options') {
-        await chrome.runtime.openOptionsPage();
-        return { ok: true };
-      }
-      return { ok: false, reason: 'no tab' };
+    if (message.kind === 'open-options') {
+      await chrome.runtime.openOptionsPage();
+      return { ok: true };
     }
+
+    if (message.kind === 'site-permission-changed') {
+      await syncOptInScripts();
+      return { ok: true };
+    }
+
+    const tabId = resolveTabId(message, sender.tab?.id) ?? await activeTabId();
+    if (!tabId) return { ok: false, reason: 'no tab' };
 
     switch (message.kind) {
       case 'report': {
@@ -192,10 +198,6 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
         return { ok: true };
       }
 
-      case 'site-permission-changed':
-        await syncOptInScripts();
-        return { ok: true };
-
       case 'fill-one':
         return await sendToTab(tabId, { kind: 'fill-one', uid: message.uid, answerId: message.answerId, value: message.value }, message.frameId);
 
@@ -210,10 +212,6 @@ chrome.runtime.onMessage.addListener((message: ToBackground, sender, sendRespons
           answerId: message.answerId,
           fill: message.fill
         }, message.frameId);
-
-      case 'open-options':
-        await chrome.runtime.openOptionsPage();
-        return { ok: true };
 
       default:
         return { ok: false, reason: 'unknown message' };

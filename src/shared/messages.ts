@@ -59,6 +59,11 @@ export interface FillSummary {
   notes: string[];
 }
 
+export function resolveTabId(message: ToBackground, senderTabId?: number): number | null {
+  const declared = 'tabId' in message ? message.tabId : undefined;
+  return declared ?? senderTabId ?? null;
+}
+
 export async function send<T = unknown>(message: ToBackground): Promise<T | null> {
   try {
     return (await chrome.runtime.sendMessage(message)) as T;
