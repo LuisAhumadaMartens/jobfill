@@ -1,0 +1,14 @@
+{
+    "schema": 1,
+    "threshold": 5,
+    "totals": {
+        "observations": 0,
+        "boards": 0,
+        "sessions": 0,
+        "published": 0,
+        "waiting": 0,
+        "held": 0
+    },
+    "boards": [],
+    "questions": []
+}
