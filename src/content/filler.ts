@@ -22,6 +22,10 @@ export interface FillOutcome {
 
 const SEARCH_BUDGET_MS = 3200;
 
+const CHIP_BUDGET_MS = 6000;
+
+const MAX_CHIPS = 12;
+
 const HIGHLIGHT_CLASS = 'jobfill-touched';
 
 function setNativeValue(el: HTMLElement, value: string): void {
@@ -254,18 +258,34 @@ async function pickFromList(
 
 async function fillChips(field: ScannedField, values: string[], answer?: Answer): Promise<FillOutcome> {
   const accepted: string[] = [];
+  const deadline = Date.now() + CHIP_BUDGET_MS;
+  let misses = 0;
+  let attempted = 0;
 
-  for (const value of values) {
+  for (const value of values.slice(0, MAX_CHIPS)) {
+    if (Date.now() > deadline || misses >= 2) break;
+    attempted++;
+
     const outcome = await fillCombobox(field, value, answer);
-    if (outcome.ok && outcome.applied) accepted.push(outcome.applied);
-    await wait(120);
+    if (outcome.ok && outcome.applied) {
+      accepted.push(outcome.applied);
+      misses = 0;
+    } else {
+      misses++;
+    }
+    await wait(80);
   }
 
-  if (!accepted.length) return { ok: false, reason: `None of those could be added` };
+  if (!accepted.length) {
+    return { ok: false, reason: 'This box did not offer any of those, so none were added' };
+  }
+
   return {
     ok: true,
     applied: accepted.join(', '),
-    reason: accepted.length < values.length ? `Added ${accepted.length} of ${values.length}` : undefined
+    reason: accepted.length < values.length
+      ? `Added ${accepted.length} of ${values.length}; add the rest by hand`
+      : undefined
   };
 }
 
@@ -305,8 +325,14 @@ async function fillCombobox(field: ScannedField, value: string, answer?: Answer)
   await wait(140);
 
   const shown = selectionText(field);
-  const settled = shown || (picked ? T.squish(el.value) : '');
-  if (picked && wanted(settled || picked)) return { ok: true, applied: settled || picked };
+
+  if (picked) {
+    const committed = (shown && T.normalize(shown).includes(T.normalize(picked)))
+      || wanted(shown || T.squish(el.value) || picked);
+    if (committed) return { ok: true, applied: picked };
+  }
+
+  if (wanted(shown)) return { ok: true, applied: shown };
 
   if (el.value) {
     typeInto(el, '');

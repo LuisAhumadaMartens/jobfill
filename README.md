@@ -51,6 +51,14 @@ Every site, including the supported boards, can be muted from the popup.
   placeholder-only fields, radio/checkbox fieldsets, custom comboboxes with a listbox,
   and applications embedded in an iframe on a careers page.
 - **Attaches your resume file** to upload fields.
+- **Keeps the whole resume**, not just the current job: every role with its dates and the
+  skills named in it, every school, and your skills as a list. Forms that ask for several
+  jobs, schools or references fill each one in order, including dates split across
+  separate month and year controls.
+- **Never assumes your status.** Work authorization and visa sponsorship start empty and
+  are answered from your resume only when it states them.
+- **Writes `{company}` and `{role}` into long answers** from whatever the page is
+  advertising, so one cover letter adapts itself.
 - **Refuses answers that cannot fit.** A phone number is not something a dropdown
   offers, so a phone answer is never proposed for one however the label reads.
 - **Reads a US state as the whole address.** "San Francisco, CA" means California, and
@@ -188,7 +196,8 @@ scripts/icons.ts         draws the extension icons at build time
 
 No analytics, no telemetry, no remote code, no network requests. Your resume, your
 answers and your profile stay in `chrome.storage.local` on this machine. Exports leave
-out the resume binary on purpose.
+out the resume binary on purpose, and carry everything else: answers, profile, work
+history, education, skills, references, languages and certifications.
 
 ## Releases
 

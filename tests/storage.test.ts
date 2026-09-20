@@ -175,3 +175,38 @@ describe('nothing about status is assumed', () => {
     expect((await storage.getAnswers()).find((answer) => answer.kind === 'workAuthorization')?.value).toBe('No');
   });
 });
+
+describe('an export is a backup, not a fragment', () => {
+  test('everything the resume produced travels with it', async () => {
+    await storage.setHistory([{ title: 'Engineer', company: 'Acme', location: '', start: '01/2020', end: '', current: true, skills: ['Go'], summary: '' }]);
+    await storage.setEducation([{ school: 'UT', degree: 'B.S.', field: 'CE', start: '', end: '2018', gpa: '3.8', location: '' }]);
+    await storage.setSkills(['Go', 'Python']);
+    await storage.setRecords({
+      references: [{ name: 'Dana', title: '', company: '', email: 'd@x.dev', phone: '', relationship: '' }],
+      languages: [{ language: 'Spanish', proficiency: 'Native' }],
+      certifications: [{ name: 'AWS', issuer: 'AWS', date: '2023' }],
+      skillYears: [{ name: 'Go', years: '5' }]
+    });
+
+    const dump = await storage.exportAll();
+    await storage.clearAll();
+    await storage.importAll(dump, { merge: false });
+    const restored = await storage.load();
+
+    expect(restored.history).toHaveLength(1);
+    expect(restored.history[0]?.skills).toEqual(['Go']);
+    expect(restored.education).toHaveLength(1);
+    expect(restored.skills).toEqual(['Go', 'Python']);
+    expect(restored.references[0]?.email).toBe('d@x.dev');
+    expect(restored.languages[0]?.language).toBe('Spanish');
+    expect(restored.certifications[0]?.name).toBe('AWS');
+    expect(restored.skillYears[0]?.years).toBe('5');
+  });
+
+  test('the resume binary still stays out of it', async () => {
+    await storage.setResume({ name: 'cv.pdf', type: 'application/pdf', size: 10, dataUrl: 'data:application/pdf;base64,AAA', text: 'Ada', parsedAt: new Date().toISOString() });
+    const dump = await storage.exportAll();
+    expect(dump.resume).not.toHaveProperty('dataUrl');
+    expect(dump.resume?.text).toBe('Ada');
+  });
+});

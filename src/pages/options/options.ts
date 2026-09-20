@@ -344,6 +344,11 @@ function answerEditor(answer: Answer): string {
         <div>
           <label>Answer</label>
           ${valueField}
+          ${answer.notes ? `<p class="fine" style="margin-top:6px">${escapeHtml(answer.notes)}</p>` : ''}
+        </div>
+        <div>
+          <label>Note to self</label>
+          <input type="text" data-role="notes" value="${escapeHtml(answer.notes)}" placeholder="Only you see this" />
         </div>
         <div>
           <label>Also recognised as ${answer.aliases.length ? `(${answer.aliases.length})` : ''}</label>
@@ -388,8 +393,9 @@ async function onAnswerClick(event: Event): Promise<void> {
       const question = pick<HTMLInputElement>('question')?.value.trim() || answer.question;
       const value = (pick<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('value')?.value ?? '').trim();
       const newAlias = pick<HTMLInputElement>('new-alias')?.value.trim();
+      const notes = pick<HTMLInputElement>('notes')?.value.trim() ?? answer.notes;
 
-      await storage.upsertAnswer({ id, question, value });
+      await storage.upsertAnswer({ id, question, value, notes });
       if (newAlias) await storage.addAlias(id, newAlias);
 
       if (answer.source === 'profile' && answer.kind) await storage.setProfile({ [answer.kind]: value });

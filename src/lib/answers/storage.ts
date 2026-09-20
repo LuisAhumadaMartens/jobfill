@@ -365,7 +365,12 @@ async function setResume(resume: ResumeRecord | null): Promise<ResumeRecord | nu
   return resume;
 }
 
-async function exportAll() {
+export interface ExportPayload extends Partial<Omit<State, 'resume'>> {
+  exportedAt?: string;
+  resume?: { name: string; text: string; parsedAt: string } | null;
+}
+
+async function exportAll(): Promise<ExportPayload> {
   const state = await load();
   return {
     exportedAt: nowISO(),
@@ -373,12 +378,18 @@ async function exportAll() {
     profile: state.profile,
     answers: state.answers,
     settings: state.settings,
-
+    history: state.history,
+    education: state.education,
+    skills: state.skills,
+    skillYears: state.skillYears,
+    references: state.references,
+    languages: state.languages,
+    certifications: state.certifications,
     resume: state.resume ? { name: state.resume.name, text: state.resume.text, parsedAt: state.resume.parsedAt } : null
   };
 }
 
-async function importAll(payload: Partial<State>, options?: { merge?: boolean }): Promise<{ answers: number }> {
+async function importAll(payload: ExportPayload, options?: { merge?: boolean }): Promise<{ answers: number }> {
   const merge = !options || options.merge !== false;
   const state = await load();
   const incoming = Array.isArray(payload.answers) ? payload.answers.map(makeAnswer) : [];
@@ -403,7 +414,27 @@ async function importAll(payload: Partial<State>, options?: { merge?: boolean })
 
   const profile = merge ? Object.assign({}, state.profile, payload.profile || {}) : (payload.profile || {});
   const settings = Object.assign(S.defaultSettings(), merge ? state.settings : {}, payload.settings || {});
-  await patch({ answers, profile, settings });
+
+  const collection = <K extends 'history' | 'education' | 'skills' | 'skillYears' | 'references' | 'languages' | 'certifications'>(
+    key: K
+  ): State[K] => {
+    const incoming = payload[key];
+    if (Array.isArray(incoming) && incoming.length) return incoming as State[K];
+    return (merge ? state[key] : ([] as unknown)) as State[K];
+  };
+
+  await patch({
+    answers,
+    profile,
+    settings,
+    history: collection('history'),
+    education: collection('education'),
+    skills: collection('skills'),
+    skillYears: collection('skillYears'),
+    references: collection('references'),
+    languages: collection('languages'),
+    certifications: collection('certifications')
+  });
   return { answers: answers.length };
 }
 
