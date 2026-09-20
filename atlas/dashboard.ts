@@ -1,5 +1,5 @@
 import { ATS_HOSTS } from '../src/lib/sites.ts';
-import type { AtlasRow, Totals } from './db.ts';
+import type { AtlasRow, Totals } from './store.ts';
 
 interface View {
   threshold: number;

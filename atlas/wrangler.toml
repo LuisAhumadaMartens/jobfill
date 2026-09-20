@@ -1,0 +1,20 @@
+name = "jobfill-atlas"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ATLAS_THRESHOLD = "5"
+ATLAS_RATE = "30"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jobfill-atlas"
+database_id = "PENDING_RUN_WRANGLER_D1_CREATE"
+
+[[routes]]
+pattern = "atlas.jobfill.app"
+custom_domain = true
+
+[observability]
+enabled = true

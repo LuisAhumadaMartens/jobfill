@@ -15,8 +15,16 @@ bun install
 bun run atlas          # http://localhost:3100
 ```
 
-That is the whole setup. The database is a SQLite file created on first write, so there is
-nothing to install and nothing to configure.
+That is the whole setup. Locally it runs on Bun over a SQLite file created on first write,
+so there is nothing to install and nothing to configure. In production the same routes run
+on a Cloudflare Worker over D1, which is SQLite as well, so the queries in
+[`store.ts`](store.ts) are shared and only the driver differs.
+
+To run it the way production does, against a local D1:
+
+```bash
+bun run atlas:dev      # wrangler dev, D1 in miniflare
+```
 
 For a local run you usually want to see rows straight away, which the publication gate
 would otherwise hold back:
@@ -74,15 +82,27 @@ evidence the gate is doing something.
 
 ## Deploy
 
+Pushing to `main` deploys it, through [`.github/workflows/atlas.yml`](../.github/workflows/atlas.yml),
+which applies the schema and then runs `wrangler deploy`. By hand it is:
+
 ```bash
-fly launch --copy-config --no-deploy
-fly volumes create atlas_data --size 1
-fly deploy
+bun run atlas:deploy
 ```
 
-`fly.toml` suspends the machine when idle and wakes it on a request, so a service this quiet
-costs nothing to leave running. Put Cloudflare in front for a second rate limit and to keep
-the origin off the public record.
+It runs on Cloudflare Workers with D1. Both free plans are far larger than this needs: 100k
+requests a day and 100k row writes a day, against a dataset that grows by a handful of rows
+per application. Nothing sleeps and nothing is deleted for being idle, so a quiet month
+costs nothing and breaks nothing.
 
-The database is a single file on the volume. Back it up with `fly ssh console -C "cat /data/atlas.sqlite" > backup.sqlite`,
-or point Litestream at it if this ever gets busy enough to matter.
+`wrangler` is deliberately not a dependency of this repository. Anyone working on the
+extension should not have to download it, so the two commands above reach for it with
+`bunx` instead.
+
+## Keeping the data
+
+Every night a workflow copies the published view into [`data/`](../data) and commits it, so
+the dataset lives in git with a history as well as in D1. That is the backup, and it is the
+answer to the only real risk here: not that the service falls over, but that a free tier
+changes years from now. The rows would still be in the repository, and the endpoint is a
+domain we own rather than a `workers.dev` address, so moving hosts is a DNS change rather
+than a broken promise to everyone who already installed the extension.

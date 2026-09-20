@@ -11,7 +11,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "zip": "bun run scripts/build.ts --zip",
-    "atlas": "bun run atlas/server.ts"
+    "atlas": "bun run atlas/server.ts",
+    "atlas:dev": "bunx wrangler dev --config atlas/wrangler.toml",
+    "atlas:deploy": "bunx wrangler deploy --config atlas/wrangler.toml"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",

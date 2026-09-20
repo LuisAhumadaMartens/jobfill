@@ -124,7 +124,8 @@ Shortcuts: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> fills the page,
 bun run dev          # rebuild dist/ on save
 bun run playground   # fixture application forms at localhost:3000
 bun run atlas        # the question atlas at localhost:3100
-bun test             # 274 tests
+bun run atlas:dev    # the same thing the way Cloudflare runs it
+bun test             # 280 tests
 bun run typecheck    # tsc --noEmit, strict
 bun run zip          # build + package for the Chrome Web Store
 ```
@@ -197,7 +198,7 @@ src/
     popup/               quick status, filling, per-site control
 assets/fonts/            Lato, vendored (SIL OFL)
 vendor/pdfjs/            vendored PDF reader, with types
-atlas/                   the question atlas: Elysia service, SQLite, public dashboard
+atlas/                   the question atlas: Elysia on Workers over D1, public dashboard
 tools/playground/        Elysia fixture server + forms
 tests/                   bun test, with happy-dom for the DOM-walking ones
 scripts/build.ts         Bun bundler -> dist/
@@ -236,11 +237,13 @@ in a report, so two reports cannot be tied to one person, and a question stays u
 until five separate reports have seen it, which is how a question one company wrote for
 one candidate never reaches the public page.
 
-Everything published is at [`atlas/`](atlas/README.md), which is the service, the
-dashboard and the rules, all in this repository. The extension and the server share one
-validator, [`src/shared/atlas.ts`](src/shared/atlas.ts), so what may be collected has a
-single definition and the server re-checks it on arrival rather than trusting the
-extension that sent it.
+Everything published is at [atlas.jobfill.app](https://atlas.jobfill.app), and the service
+behind it is [`atlas/`](atlas/README.md) in this repository, along with the rules it
+enforces. The extension and the server share one validator,
+[`src/shared/atlas.ts`](src/shared/atlas.ts), so what may be collected has a single
+definition, and the server re-checks it on arrival rather than trusting the extension that
+sent it. The published view is also committed to [`data/`](data) every night, so the
+dataset has a history in git and outlives whatever it happens to be hosted on.
 
 ## Releases
 

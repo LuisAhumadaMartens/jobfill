@@ -1,0 +1,65 @@
+name: Atlas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'atlas/**'
+      - 'src/shared/atlas.ts'
+      - '.github/workflows/atlas.yml'
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: atlas
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test tests/atlas.test.ts tests/atlas-d1.test.ts tests/atlas-server.test.ts
+
+      - name: Apply the schema
+        run: bunx wrangler d1 execute jobfill-atlas --remote --yes --file=atlas/schema.sql --config atlas/wrangler.toml
+
+      - name: Deploy the worker
+        run: bunx wrangler deploy --config atlas/wrangler.toml
+
+  export:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Take a copy of what is published
+        run: |
+          mkdir -p data
+          curl -sfS --max-time 60 https://atlas.jobfill.app/v1/atlas | python3 -m json.tool > data/lexicon.json
+          curl -sfS --max-time 60 https://atlas.jobfill.app/v1/atlas.csv > data/lexicon.csv
+
+      - name: Commit it if it changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/lexicon.json data/lexicon.csv
+          if git diff --cached --quiet; then
+            echo "The published dataset has not changed."
+            exit 0
+          fi
+          git commit -m "Update the published dataset"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

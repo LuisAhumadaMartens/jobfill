@@ -1,11 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { unlinkSync } from 'node:fs';
-import { Atlas, questionKey } from '../atlas/db.ts';
+import { SqliteStore } from '../atlas/sqlite.ts';
+import { questionKey } from '../atlas/store.ts';
+import type { AtlasRow } from '../atlas/store.ts';
 import { RateLimit } from '../atlas/limit.ts';
 import { ATLAS_SCHEMA, type Observation, type Report } from '../src/shared/atlas.ts';
 
 const DB = `/tmp/atlas-test-${crypto.randomUUID()}.sqlite`;
-let atlas: Atlas;
+let atlas: SqliteStore;
 
 function observation(over: Partial<Observation> = {}): Observation {
   return {
@@ -22,33 +24,35 @@ function session(): string {
   return crypto.randomUUID().replace(/-/g, '');
 }
 
-beforeAll(() => { atlas = new Atlas(DB); });
+beforeAll(() => { atlas = new SqliteStore(DB); });
 afterAll(() => { atlas.close(); try { unlinkSync(DB); } catch {} });
 
 describe('recording reports', () => {
-  test('a report is stored and counted', () => {
-    expect(atlas.record(report(session(), [observation()]))).toBe(1);
+  test('a report is stored and counted', async () => {
+    expect(await atlas.record(report(session(), [observation()]))).toBe(1);
   });
 
-  test('one session cannot inflate the count by sending twice', () => {
+  test('one session cannot inflate the count by sending twice', async () => {
     const token = session();
     const same = report(token, [observation({ question: 'Why do you want to join us?' })]);
-    expect(atlas.record(same)).toBe(1);
-    expect(atlas.record(same)).toBe(0);
+    expect(await atlas.record(same)).toBe(1);
+    expect(await atlas.record(same)).toBe(0);
   });
 
-  test('a question is held back until enough separate sessions have seen it', () => {
+  test('a question is held back until enough separate sessions have seen it', async () => {
     const question = 'Do you have experience leading a team?';
-    const published = () => atlas.published(5).filter((row) => row.question === question);
+    const published = async (): Promise<AtlasRow[]> =>
+      (await atlas.published(5)).filter((row) => row.question === question);
 
     for (let count = 1; count < 5; count += 1) {
-      atlas.record(report(session(), [observation({ question })]));
-      expect(published()).toHaveLength(0);
+      await atlas.record(report(session(), [observation({ question })]));
+      expect(await published()).toHaveLength(0);
     }
 
-    atlas.record(report(session(), [observation({ question })]));
-    expect(published()).toHaveLength(1);
-    expect(published()[0].sessions).toBe(5);
+    await atlas.record(report(session(), [observation({ question })]));
+    const rows = await published();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.sessions).toBe(5);
   });
 
   test('the same question on two boards is kept apart', () => {
@@ -59,8 +63,8 @@ describe('recording reports', () => {
     expect(questionKey('greenhouse.io', '  Why   US?  ')).toBe(questionKey('greenhouse.io', 'Why us?'));
   });
 
-  test('totals separate what is published from what is held', () => {
-    const totals = atlas.totals(5);
+  test('totals separate what is published from what is held', async () => {
+    const totals = await atlas.totals(5);
     expect(totals.published).toBeGreaterThan(0);
     expect(totals.held).toBeGreaterThan(0);
     expect(totals.observations).toBeGreaterThan(totals.published);

@@ -1,7 +1,7 @@
 import { ATLAS_SCHEMA, LIMITS, type Observation, type Report } from '../../shared/atlas.ts';
 import { batches, readConsent, readQueue, writeConsent, writeQueue } from './queue.ts';
 
-export const ATLAS_ORIGIN = 'https://atlas.jobfill.dev';
+export const ATLAS_ORIGIN = 'https://atlas.jobfill.app';
 export const ATLAS_DEV_ORIGIN = 'http://localhost:3100';
 
 export interface SendResult {
