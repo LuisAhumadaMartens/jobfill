@@ -68,6 +68,7 @@ bun run dex          # the question bank at localhost:3100
 bun run dex:data     # everything the dex has on record
 bun run dex:review   # decide what gets published
 bun run docs         # regenerate docs/ for jobfill.app
+bun run design:sync  # pull token changes from the ahumada.dev checkout
 bun test             # 341 tests
 bun run typecheck
 bun run zip

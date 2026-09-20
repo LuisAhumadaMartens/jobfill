@@ -16,7 +16,8 @@
     "dex": "bun run dex/server.ts",
     "dex:review": "bun run dex/review.ts",
     "docs": "bun run scripts/docs.ts",
-    "dex:data": "bun run dex/review.ts --all"
+    "dex:data": "bun run dex/review.ts --all",
+    "design:sync": "bun run scripts/design-sync.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",
