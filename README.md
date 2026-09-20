@@ -50,7 +50,9 @@ Every site, including the supported boards, can be muted from the popup.
 - **Handles the markup ATSs actually ship**: `<label for>`, `aria-labelledby` on divs,
   placeholder-only fields, radio/checkbox fieldsets, custom comboboxes with a listbox,
   and applications embedded in an iframe on a careers page.
-- **Attaches your resume file** to upload fields.
+- **Separates the resume it reads from the file it sends.** Your master resume can be as
+  long as you like, since it is only read for your details; the file attached to
+  applications is chosen separately and is usually shorter.
 - **Keeps the whole resume**, not just the current job: every role with its dates and the
   skills named in it, every school, and your skills as a list. Forms that ask for several
   jobs, schools or references fill each one in order, including dates split across
@@ -93,6 +95,10 @@ Every site, including the supported boards, can be muted from the popup.
   aggregates every frame, and the frame holding the form is the one that draws the panel.
 - **Never overwrites** anything already typed (configurable), and never fills a field it
   is not confident about. Those show up as a suggestion you confirm with one click.
+- **Undoes a fill.** Every field is remembered as it was, and one click puts them all
+  back for a minute and a half afterwards.
+- **Answers can apply to one site only**, for the question a particular board words in a
+  way you want handled differently.
 
 ## Install
 

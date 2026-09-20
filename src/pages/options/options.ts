@@ -86,19 +86,27 @@ async function applyParsed(): Promise<void> {
   await storage.setHistory(toWorkEntries(parsed.experience));
   await storage.setEducation(toEducationEntries(parsed.education));
   await storage.setSkills(parsed.skills);
-  await storage.setResume({
+  await storage.setMaster({
     name: parsed.name,
+    text: parsed.text,
+    parsedAt: parsed.parsedAt,
     type: parsed.type,
     size: parsed.size,
-    dataUrl: parsed.dataUrl,
-    text: parsed.text,
-    parsedAt: parsed.parsedAt
+    dataUrl: parsed.dataUrl
   });
+
+  if (!state.resume && parsed.dataUrl) {
+    await storage.setResume({
+      name: parsed.name, type: parsed.type, size: parsed.size,
+      dataUrl: parsed.dataUrl, text: parsed.text, parsedAt: parsed.parsedAt
+    });
+  }
   state = await storage.load();
   renderProfile();
   renderHistory();
   renderEducation();
   renderSkills();
+  renderAttachment();
   renderAllRecords();
   renderAnswers();
   flash('Profile updated');
@@ -261,6 +269,18 @@ function renderAllRecords(): void {
   for (const shape of RECORD_SHAPES()) renderRecords(shape);
 }
 
+function renderAttachment(): void {
+  const resume = state.resume;
+  const master = state.master;
+
+  $('attachment-state').innerHTML = resume
+    ? `Attaching <strong>${escapeHtml(resume.name)}</strong>${resume.size ? ` (${Math.round(resume.size / 1024)} KB)` : ''}.`
+    : 'Nothing attached yet. Applications asking for a file will be left for you.';
+
+  $<HTMLButtonElement>('drop-attachment').hidden = !resume;
+  $<HTMLButtonElement>('attach-master').hidden = !master || resume?.name === master.name;
+}
+
 function renderEducation(): void {
   const entries = state.education ?? [];
   $('education').innerHTML = entries.length
@@ -333,6 +353,7 @@ function answerEditor(answer: Answer): string {
       <summary>
         <span class="q">${escapeHtml(answer.question)}</span>
         <span class="v">${escapeHtml(answer.value) || '<em>no answer yet</em>'}</span>
+        ${answer.scope !== 'global' ? `<span class="pill">${escapeHtml(answer.scope.replace(/^site:/, ''))}</span>` : ''}
         ${answer.kind ? `<span class="pill">${escapeHtml(answer.kind)}</span>` : ''}
         ${answer.usageCount ? `<span class="pill">used ${answer.usageCount} time${answer.usageCount === 1 ? '' : 's'}</span>` : ''}
       </summary>
@@ -349,6 +370,11 @@ function answerEditor(answer: Answer): string {
         <div>
           <label>Note to self</label>
           <input type="text" data-role="notes" value="${escapeHtml(answer.notes)}" placeholder="Only you see this" />
+        </div>
+        <div>
+          <label>Where this applies</label>
+          <input type="text" data-role="scope" value="${escapeHtml(answer.scope === 'global' ? '' : answer.scope.replace(/^site:/, ''))}"
+                 placeholder="Every site. Type a hostname to use it on that site only." />
         </div>
         <div>
           <label>Also recognised as ${answer.aliases.length ? `(${answer.aliases.length})` : ''}</label>
@@ -394,8 +420,10 @@ async function onAnswerClick(event: Event): Promise<void> {
       const value = (pick<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('value')?.value ?? '').trim();
       const newAlias = pick<HTMLInputElement>('new-alias')?.value.trim();
       const notes = pick<HTMLInputElement>('notes')?.value.trim() ?? answer.notes;
+      const host = pick<HTMLInputElement>('scope')?.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      const scope = host ? `site:${host}` : 'global';
 
-      await storage.upsertAnswer({ id, question, value, notes });
+      await storage.upsertAnswer({ id, question, value, notes, scope });
       if (newAlias) await storage.addAlias(id, newAlias);
 
       if (answer.source === 'profile' && answer.kind) await storage.setProfile({ [answer.kind]: value });
@@ -539,6 +567,7 @@ async function boot(): Promise<void> {
   renderHistory();
   renderEducation();
   renderSkills();
+  renderAttachment();
   renderAllRecords();
   for (const shape of RECORD_SHAPES()) wireRecords(shape);
   renderAnswers();
@@ -550,6 +579,54 @@ async function boot(): Promise<void> {
   });
 
   $('save-profile').addEventListener('click', () => void saveProfile());
+
+  $('choose-attachment').addEventListener('click', () => $<HTMLInputElement>('attachment-file').click());
+
+  $('attachment-file').addEventListener('change', async (event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      await storage.setResume({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        dataUrl: String(reader.result),
+        text: '',
+        parsedAt: new Date().toISOString()
+      });
+      state = await storage.load();
+      renderAttachment();
+      flash('Attachment saved');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $('attach-master').addEventListener('click', async () => {
+    const master = state.master;
+    if (!master?.dataUrl) {
+      flash('Import a master resume first');
+      return;
+    }
+    await storage.setResume({
+      name: master.name,
+      type: master.type ?? 'application/pdf',
+      size: master.size ?? 0,
+      dataUrl: master.dataUrl,
+      text: master.text,
+      parsedAt: master.parsedAt
+    });
+    state = await storage.load();
+    renderAttachment();
+    flash('Attaching your master resume');
+  });
+
+  $('drop-attachment').addEventListener('click', async () => {
+    await storage.setResume(null);
+    state = await storage.load();
+    renderAttachment();
+    flash('Attachment removed');
+  });
 
   $('education').addEventListener('click', async (event) => {
     const index = (event.target as HTMLElement).dataset.removeEducation;

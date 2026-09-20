@@ -44,6 +44,15 @@ export interface Settings {
 
 export type Profile = Record<string, string>;
 
+export interface MasterResume {
+  name: string;
+  text: string;
+  parsedAt: string;
+  type?: string;
+  size?: number;
+  dataUrl?: string | null;
+}
+
 export interface ResumeRecord {
   name: string;
   type: string;
@@ -111,6 +120,7 @@ export interface State {
   answers: Answer[];
   settings: Settings;
   resume: ResumeRecord | null;
+  master: MasterResume | null;
   stats: Stats;
 
   pendingReview: PendingReview | null;

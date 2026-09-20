@@ -1,6 +1,6 @@
 import { beforeEach, expect, test } from 'bun:test';
 import { readValue, scan } from '../src/content/scanner.ts';
-import { fillField } from '../src/content/filler.ts';
+import { fillField, restoreValue } from '../src/content/filler.ts';
 import type { ScannedField } from '../src/shared/types.ts';
 
 function render(html: string): ScannedField[] {
@@ -341,4 +341,33 @@ test('a yes/no pair of buttons is a question, not two', async () => {
 
   await fillField(group!, 'Yes');
   expect(document.querySelectorAll('button')[0]!.getAttribute('aria-pressed')).toBe('false');
+});
+
+test('undo puts every kind of field back the way it was', async () => {
+  const fields = render(`
+    <form>
+      <label for="t">First Name</label><input id="t" name="first_name" value="Original">
+      <label for="s">Are you willing to relocate?</label>
+      <select id="s" name="reloc"><option>Yes</option><option>No</option></select>
+      <label><input type="checkbox" name="terms"> I agree</label>
+    </form>`);
+
+  const text = fields.find((f) => f.control === 'input')!;
+  const select = fields.find((f) => f.control === 'select')!;
+  const checkbox = fields.find((f) => f.control === 'checkbox')!;
+
+  const before = fields.map((field) => readValue(field));
+
+  await fillField(text, 'Replaced');
+  await fillField(select, 'No');
+  await fillField(checkbox, 'Yes');
+
+  expect(readValue(text)).toBe('Replaced');
+  expect(readValue(checkbox)).toBe('Yes');
+
+  fields.forEach((field, index) => restoreValue(field, before[index]!));
+
+  expect(readValue(text)).toBe('Original');
+  expect(readValue(select)).toBe('Yes');
+  expect(readValue(checkbox)).toBe('');
 });

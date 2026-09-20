@@ -252,6 +252,7 @@ function defaultState(): State {
     answers: [],
     settings: defaultSettings(),
     resume: null,
+    master: null,
     stats: { filled: 0, learned: 0, applications: 0 },
     pendingReview: null,
     history: [],

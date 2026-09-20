@@ -359,6 +359,43 @@ export async function attachFile(field: ScannedField, resume: ResumeRecord): Pro
   }
 }
 
+export function restoreValue(field: ScannedField, previous: string): void {
+  const inputs = field.inputs ?? [];
+
+  if (field.control === 'checkbox' || field.control === 'radio') {
+    const wanted = T.normalize(previous);
+    for (const input of inputs) {
+      const option = field.options.find((candidate) => candidate.el === input);
+      const should = !!wanted && T.normalize(option?.text ?? '') === wanted;
+      if (input.checked !== should) input.click();
+    }
+    for (const option of field.options) {
+      const node = option.el;
+      if (!node || node instanceof HTMLInputElement) continue;
+      const should = !!wanted && T.normalize(option.text) === wanted;
+      if ((node.getAttribute('aria-checked') === 'true') !== should) node.click();
+    }
+    flash(field.el, true);
+    return;
+  }
+
+  if (field.control === 'contenteditable') {
+    fillContentEditable(field.el, previous);
+    flash(field.el, true);
+    return;
+  }
+
+  if (field.control === 'select') {
+    setNativeValue(field.el, previous);
+    announce(field.el, ['input', 'change']);
+    flash(field.el, true);
+    return;
+  }
+
+  typeInto(field.el, previous);
+  flash(field.el, true);
+}
+
 export function flash(el: HTMLElement, ok = true): void {
   el.classList.add(HIGHLIGHT_CLASS);
   el.setAttribute('data-jobfill', ok ? 'filled' : 'failed');

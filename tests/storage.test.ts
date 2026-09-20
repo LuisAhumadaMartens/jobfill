@@ -210,3 +210,35 @@ describe('an export is a backup, not a fragment', () => {
     expect(dump.resume?.text).toBe('Ada');
   });
 });
+
+describe('the master resume and the file that gets attached', () => {
+  const master = () => storage.setMaster({
+    name: 'master.pdf', text: 'everything about me', parsedAt: new Date().toISOString(),
+    dataUrl: 'data:application/pdf;base64,AAA', type: 'application/pdf', size: 400
+  });
+
+  test('they are stored apart, so a short resume can be sent from a long one', async () => {
+    await master();
+    await storage.setResume({ name: 'tailored.pdf', type: 'application/pdf', size: 120, dataUrl: 'data:application/pdf;base64,BBB', text: '', parsedAt: new Date().toISOString() });
+
+    const state = await storage.load();
+    expect(state.master?.name).toBe('master.pdf');
+    expect(state.resume?.name).toBe('tailored.pdf');
+    expect(state.resume?.dataUrl).toContain('BBB');
+  });
+
+  test('removing the attachment leaves the details behind', async () => {
+    await master();
+    await storage.setResume(null);
+    const state = await storage.load();
+    expect(state.resume).toBeNull();
+    expect(state.master?.text).toBe('everything about me');
+  });
+
+  test('neither binary is exported', async () => {
+    await master();
+    const dump = await storage.exportAll();
+    expect(JSON.stringify(dump)).not.toContain('base64,AAA');
+    expect(dump.master?.text).toBe('everything about me');
+  });
+});

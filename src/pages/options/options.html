@@ -24,11 +24,14 @@
         <div class="intro">
           <h2>Start from your resume</h2>
           <p>
-            Drop a PDF or Word file here. It is read inside this browser (no upload, no server)
-            and used to fill in your profile below. The file itself is kept so JobFill can attach it
-            to applications that ask for one.
+            Two separate things. Your <strong>master resume</strong> is read for your details:
+            put everything in it, however long. The <strong>file to attach</strong> is what
+            employers actually receive, and is usually shorter. They can be the same file.
+            Both are read inside this browser, with no upload and no server.
           </p>
         </div>
+
+        <h3>Master resume, read for your details</h3>
 
         <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a resume file">
           <p class="drop-title">Drop your resume here</p>
@@ -43,6 +46,15 @@
         </details>
 
         <div id="resume-result" class="result" hidden></div>
+
+        <h3>File to attach to applications</h3>
+        <p class="fine" id="attachment-state">Nothing attached yet.</p>
+        <div class="row-actions">
+          <button class="ghost" id="choose-attachment">Choose a file</button>
+          <button class="ghost" id="attach-master">Use my master resume</button>
+          <button class="danger" id="drop-attachment">Remove</button>
+          <input type="file" id="attachment-file" accept=".pdf,.docx,.txt,.md,application/pdf" hidden />
+        </div>
       </section>
 
       <section id="panel-profile" class="panel" hidden>

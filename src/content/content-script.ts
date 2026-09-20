@@ -37,6 +37,8 @@ let panel: Panel | null = null;
 let dismissed = false;
 
 const attempted = new Map<string, { value: string; ok: boolean }>();
+
+let undoable: Array<{ uid: string; previous: string }> = [];
 let rescanTimer: ReturnType<typeof setTimeout> | null = null;
 
 const SALARY_KINDS = new Set(['compensation', 'salaryMin', 'salaryMax']);
@@ -215,6 +217,7 @@ function updatePanel(isApplication: boolean): void {
       onReveal: (plan) => void route(plan, () => reveal(plan.field.uid),
         { kind: 'reveal', frameId: plan.frameId, uid: plan.field.uid }),
       onRescan: () => void refresh(),
+      onUndo: () => void undoFill(),
       onCorner: (corner) => void storage.setSettings({ panelCorner: corner }),
       onSaveReview: (uids) => void saveReview(uids),
       onDismissReview: () => void dismissReview(),
@@ -337,6 +340,10 @@ async function fillAll(): Promise<FillSummary> {
   const summary: FillSummary = { filled: 0, failed: 0, skipped: 0, notes: [] };
   panel?.setBusy(true, 'Filling…');
 
+  undoable = plans
+    .filter((plan) => plan.status === 'ready')
+    .map((plan) => ({ uid: plan.field.uid, previous: fields.get(plan.field.uid) ? scanner.readValue(fields.get(plan.field.uid)!) : '' }));
+
   for (const plan of plans.filter((p) => p.status === 'ready')) {
     const ok = await fillOne(plan.field.uid, plan.answerId, plan.value);
     if (ok) summary.filled++;
@@ -352,6 +359,7 @@ async function fillAll(): Promise<FillSummary> {
   panel?.setBusy(false, summary.failed
     ? `Filled ${summary.filled}, ${summary.failed} need you`
     : summary.filled ? `Filled ${summary.filled} field${summary.filled === 1 ? '' : 's'}` : '');
+  panel?.setUndoable(summary.filled > 0);
   if (state) {
     await storage.patch({ stats: { ...state.stats, applications: state.stats.applications + (summary.filled ? 1 : 0) } });
     state = await storage.load();
@@ -476,6 +484,23 @@ async function offerPendingReview(): Promise<void> {
   if (!ownsPanel || !state?.settings.askToSaveOnSubmit) return;
   const review = await storage.getPendingReview(host);
   if (review) showReview(review);
+}
+
+async function undoFill(): Promise<void> {
+  let restored = 0;
+
+  for (const { uid, previous } of undoable) {
+    const field = fields.get(uid);
+    if (!field || !field.el.isConnected) continue;
+    filler.restoreValue(field, previous);
+    attempted.delete(uid);
+    restored++;
+  }
+
+  undoable = [];
+  panel?.setUndoable(false);
+  await refresh({ rescan: false });
+  panel?.setBusy(false, restored ? `Put ${restored} field${restored === 1 ? '' : 's'} back` : 'Nothing to undo');
 }
 
 function reveal(uid: string): void {

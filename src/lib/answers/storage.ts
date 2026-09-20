@@ -3,9 +3,9 @@ import * as S from './schema.ts';
 import { isUnitedStates } from '../matching/synonyms.ts';
 import { classify } from '../matching/matcher.ts';
 import { parsePhone } from '../values/phone.ts';
-import type { Answer, EducationEntry, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
+import type { Answer, EducationEntry, MasterResume, PendingReview, Profile, ResumeRecord, ReviewItem, Settings, State, WorkEntry } from '../../shared/types.ts';
 
-const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills', 'skillYears', 'references', 'languages', 'certifications'];
+const KEYS: Array<keyof State> = ['version', 'profile', 'answers', 'settings', 'resume', 'stats', 'pendingReview', 'history', 'education', 'skills', 'skillYears', 'references', 'languages', 'certifications', 'master'];
 
 interface Area {
   get(keys?: string[] | null): Promise<Record<string, unknown>>;
@@ -365,6 +365,11 @@ async function setResume(resume: ResumeRecord | null): Promise<ResumeRecord | nu
   return resume;
 }
 
+async function setMaster(master: MasterResume | null): Promise<MasterResume | null> {
+  await patch({ master });
+  return master;
+}
+
 export interface ExportPayload extends Partial<Omit<State, 'resume'>> {
   exportedAt?: string;
   resume?: { name: string; text: string; parsedAt: string } | null;
@@ -385,6 +390,9 @@ async function exportAll(): Promise<ExportPayload> {
     references: state.references,
     languages: state.languages,
     certifications: state.certifications,
+    master: state.master
+      ? { name: state.master.name, text: state.master.text, parsedAt: state.master.parsedAt }
+      : null,
     resume: state.resume ? { name: state.resume.name, text: state.resume.text, parsedAt: state.resume.parsedAt } : null
   };
 }
@@ -427,6 +435,7 @@ async function importAll(payload: ExportPayload, options?: { merge?: boolean }):
     answers,
     profile,
     settings,
+    master: payload.master ?? (merge ? state.master : null),
     history: collection('history'),
     education: collection('education'),
     skills: collection('skills'),
@@ -458,6 +467,6 @@ async function setHostDisabled(host: string, disabled: boolean): Promise<Setting
 export {
   KEYS, uid, makeAnswer, seedAnswers, load, patch, getAnswers, getSettings, setSettings,
   upsertAnswer, deleteAnswer, addAlias, addValueAlias, recordUse, setProfile, setResume,
-  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills, setRecords,
+  setPendingReview, getPendingReview, applyReview, setHistory, setEducation, setSkills, setRecords, setMaster,
   exportAll, importAll, clearAll, isHostDisabled, setHostDisabled
 };

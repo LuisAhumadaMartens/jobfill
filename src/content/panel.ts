@@ -39,6 +39,7 @@ export interface PanelCallbacks {
   onSave(plan: FieldPlan, value: string, answerId?: string): void;
   onReveal(plan: FieldPlan): void;
   onRescan(): void;
+  onUndo(): void;
   onOpenOptions(): void;
   onDismiss(): void;
 }
@@ -66,6 +67,8 @@ export class Panel {
   private corner: PanelCorner = 'br';
   private drafts = new Map<string, string>();
   private lastHeight = 0;
+  private canUndo = false;
+  private undoTimer: ReturnType<typeof setTimeout> | null = null;
   private listScroll = 0;
   private dragging = false;
   private suppressClick = false;
@@ -250,6 +253,18 @@ export class Panel {
     return this.open;
   }
 
+  setUndoable(canUndo: boolean): void {
+    this.canUndo = canUndo;
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+    if (canUndo) {
+      this.undoTimer = setTimeout(() => {
+        this.canUndo = false;
+        this.render();
+      }, 90_000);
+    }
+    this.render();
+  }
+
   setBusy(busy: boolean, status = ''): void {
     this.busy = busy;
     this.status = status;
@@ -357,7 +372,7 @@ export class Panel {
 
         <footer class="foot">
           <span>${this.status || `${this.answers.length} answers saved`}</span>
-          <a data-act="options">Manage answers</a>
+          ${this.canUndo ? '<a data-act="undo">Undo fill</a>' : '<a data-act="options">Manage answers</a>'}
         </footer>
       </section>`;
   this.after();
@@ -581,6 +596,7 @@ export class Panel {
         break;
       case 'close': this.setOpen(false); break;
       case 'rescan': this.callbacks.onRescan(); break;
+      case 'undo': this.callbacks.onUndo(); break;
       case 'options': this.callbacks.onOpenOptions(); break;
       case 'fill-all': this.callbacks.onFillAll(); break;
       case 'dismiss': this.callbacks.onDismiss(); break;
