@@ -13,7 +13,8 @@
     "zip": "bun run scripts/build.ts --zip",
     "dex:dev": "bunx wrangler dev --config dex/wrangler.toml",
     "dex:deploy": "bunx wrangler deploy --config dex/wrangler.toml",
-    "dex": "bun run dex/server.ts"
+    "dex": "bun run dex/server.ts",
+    "dex:review": "bun run dex/review.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",

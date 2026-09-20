@@ -16,3 +16,11 @@ create table if not exists observation (
 create index if not exists observation_question on observation (question_key);
 create index if not exists observation_ats on observation (ats);
 create unique index if not exists observation_once on observation (session, question_key, outcome);
+
+create table if not exists decision (
+  question_key text not null,
+  outcome text not null,
+  verdict text not null,
+  decided_at text not null,
+  primary key (question_key, outcome)
+);

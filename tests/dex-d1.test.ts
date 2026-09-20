@@ -100,7 +100,7 @@ describe('the D1 store', () => {
   test('totals survive an empty database instead of returning NaN', async () => {
     const { db } = fakeD1({ first: undefined });
     const totals = await new D1Store(db).totals(5);
-    expect(totals).toEqual({ observations: 0, boards: 0, sessions: 0, published: 0, held: 0 });
+    expect(totals).toEqual({ observations: 0, boards: 0, sessions: 0, published: 0, waiting: 0, held: 0 });
   });
 });
 

@@ -39,20 +39,59 @@ describe('recording reports', () => {
     expect(await store.record(same)).toBe(0);
   });
 
-  test('a question is held back until enough separate sessions have seen it', async () => {
+  test('a question is not even offered for review until enough separate sessions have seen it', async () => {
     const question = 'Do you have experience leading a team?';
-    const published = async (): Promise<QuestionRow[]> =>
-      (await store.published(5)).filter((row) => row.question === question);
+    const waiting = async () => (await store.pending(5)).filter((row) => row.question === question);
 
     for (let count = 1; count < 5; count += 1) {
       await store.record(report(session(), [observation({ question })]));
-      expect(await published()).toHaveLength(0);
+      expect(await waiting()).toHaveLength(0);
     }
 
     await store.record(report(session(), [observation({ question })]));
-    const rows = await published();
+    expect(await waiting()).toHaveLength(1);
+  });
+
+  test('reaching the threshold publishes nothing on its own', async () => {
+    const question = 'Which of our products have you used?';
+    for (let count = 0; count < 6; count += 1) {
+      await store.record(report(session(), [observation({ question })]));
+    }
+
+    expect((await store.published(5)).filter((row) => row.question === question)).toHaveLength(0);
+    expect((await store.pending(5)).filter((row) => row.question === question)).toHaveLength(1);
+  });
+
+  test('a question reaches the page only once a person approves it', async () => {
+    const question = 'How many years have you written TypeScript?';
+    for (let count = 0; count < 6; count += 1) {
+      await store.record(report(session(), [observation({ question })]));
+    }
+
+    const [pending] = (await store.pending(5)).filter((row) => row.question === question);
+    await store.decide(pending!.questionKey, pending!.outcome, 'approved');
+
+    const rows = (await store.published(5)).filter((row) => row.question === question);
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.sessions).toBe(5);
+    expect(rows[0]!.sessions).toBe(6);
+    expect((await store.pending(5)).filter((row) => row.question === question)).toHaveLength(0);
+  });
+
+  test('a blocked question never appears, however many people report it', async () => {
+    const question = 'Describe a time you disagreed with a manager.';
+    for (let count = 0; count < 6; count += 1) {
+      await store.record(report(session(), [observation({ question })]));
+    }
+
+    const [pending] = (await store.pending(5)).filter((row) => row.question === question);
+    await store.decide(pending!.questionKey, pending!.outcome, 'blocked');
+
+    for (let count = 0; count < 20; count += 1) {
+      await store.record(report(session(), [observation({ question })]));
+    }
+
+    expect((await store.published(5)).filter((row) => row.question === question)).toHaveLength(0);
+    expect((await store.pending(5)).filter((row) => row.question === question)).toHaveLength(0);
   });
 
   test('the same question on two boards is kept apart', () => {
@@ -63,9 +102,10 @@ describe('recording reports', () => {
     expect(questionKey('greenhouse.io', '  Why   US?  ')).toBe(questionKey('greenhouse.io', 'Why us?'));
   });
 
-  test('totals separate what is published from what is held', async () => {
+  test('totals tell apart published, waiting on review, and below the threshold', async () => {
     const totals = await store.totals(5);
     expect(totals.published).toBeGreaterThan(0);
+    expect(totals.waiting).toBeGreaterThan(0);
     expect(totals.held).toBeGreaterThan(0);
     expect(totals.observations).toBeGreaterThan(totals.published);
   });
@@ -134,7 +174,7 @@ describe('the ingest endpoint', () => {
     const body = await response.text();
     expect(body).not.toContain(token);
     expect(/[0-9a-f]{32}/.test(body)).toBe(false);
-    expect(body).toContain('Which timezone do you work from?');
+    expect(body).not.toContain('Which timezone do you work from?');
   });
 
   test('the dashboard renders and says what is never collected', async () => {

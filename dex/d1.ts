@@ -1,5 +1,5 @@
-import { BOARDS, COUNTS, GATED, GROUPS, INSERT, PUBLISHED, bindingsFor, withOptions } from './store.ts';
-import type { QuestionRow, Board, Store, Totals } from './store.ts';
+import { BOARDS, COUNTS, DECIDE, GATED, GROUPS, INSERT, PENDING, PUBLISHED, WAITING, bindingsFor, withOptions } from './store.ts';
+import type { Board, PendingRow, QuestionRow, Reviewable, Totals, Verdict } from './store.ts';
 import type { Report } from '../src/shared/dex.ts';
 
 interface D1Result<T = unknown> {
@@ -19,7 +19,7 @@ export interface D1Database {
   batch(statements: D1Statement[]): Promise<D1Result[]>;
 }
 
-export class D1Store implements Store {
+export class D1Store implements Reviewable {
   constructor(private readonly db: D1Database) {}
 
   async record(report: Report): Promise<number> {
@@ -42,6 +42,7 @@ export class D1Store implements Store {
   async totals(threshold: number): Promise<Totals> {
     const counts = await this.db.prepare(COUNTS).first<{ observations: number; boards: number; sessions: number }>();
     const gated = await this.db.prepare(GATED).bind(threshold).first<{ groups: number }>();
+    const waiting = await this.db.prepare(WAITING).bind(threshold).first<{ groups: number }>();
     const groups = await this.db.prepare(GROUPS).first<{ groups: number }>();
 
     return {
@@ -49,7 +50,18 @@ export class D1Store implements Store {
       boards: counts?.boards ?? 0,
       sessions: counts?.sessions ?? 0,
       published: gated?.groups ?? 0,
-      held: (groups?.groups ?? 0) - (gated?.groups ?? 0)
+      waiting: waiting?.groups ?? 0,
+      held: (groups?.groups ?? 0) - (gated?.groups ?? 0) - (waiting?.groups ?? 0)
     };
+  }
+
+  async pending(threshold: number): Promise<PendingRow[]> {
+    const { results } = await this.db.prepare(PENDING).bind(threshold)
+      .all<Omit<PendingRow, 'options'> & { options: string }>();
+    return results.map((row) => ({ ...row, options: JSON.parse(row.options) as string[] }));
+  }
+
+  async decide(questionKey: string, outcome: string, verdict: Verdict): Promise<void> {
+    await this.db.prepare(DECIDE).bind(questionKey, outcome, verdict, new Date().toISOString()).run();
   }
 }

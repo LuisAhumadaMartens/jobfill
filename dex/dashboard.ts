@@ -119,8 +119,8 @@ export function dashboard(view: View): string {
   <h2>What is here</h2>
   <div class="totals">
     <div class="stat"><b>${view.totals.published}</b><span>questions published</span></div>
+    <div class="stat"><b>${view.totals.waiting}</b><span>waiting on review</span></div>
     <div class="stat"><b>${view.totals.held}</b><span>held back</span></div>
-    <div class="stat"><b>${view.totals.boards}</b><span>job boards</span></div>
     <div class="stat"><b>${view.totals.observations}</b><span>reports</span></div>
   </div>
 
@@ -133,6 +133,7 @@ export function dashboard(view: View): string {
       <li><strong>Never collected:</strong> any identifier. There is no account and no install id, so nothing here links two reports to one person.</li>
       <li><strong>Never collected:</strong> questions about race, gender, disability, veteran status, orientation, religion or age. Those are refused before anything is queued.</li>
       <li><strong>Held back:</strong> a question stays private until <strong>${view.threshold} separate reports</strong> have seen it, which is how a question one company wrote for one person never reaches this page.</li>
+      <li><strong>Reviewed by a person:</strong> reaching that count only puts a question in a queue. Nothing appears here until it has been read and approved by hand, because an endpoint anybody can post to is an endpoint anybody can post anything to.</li>
     </ul>
   </div>
 
