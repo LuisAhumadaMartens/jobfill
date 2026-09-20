@@ -94,6 +94,17 @@ requests a day and 100k row writes a day, against a dataset that grows by a hand
 per application. Nothing sleeps and nothing is deleted for being idle, so a quiet month
 costs nothing and breaks nothing.
 
+**The custom domain is attached once, by hand**, rather than declared here. In the
+dashboard: **Workers & Pages -> jobfill-questions -> Settings -> Domains & Routes -> Add ->
+Custom domain -> `questions.jobfill.app`**. Cloudflare creates the DNS record and the
+certificate itself.
+
+Keeping it out of `wrangler.toml` is deliberate. A route declared in config has to be
+re-asserted on every deploy, which means the token this repository holds would need
+`Zone -> Workers Routes -> Edit` on `jobfill.app` forever, to change something that changes
+once. Attaching it by hand costs a minute and keeps the stored token account-scoped: it can
+deploy code, and it cannot touch DNS.
+
 `wrangler` is deliberately not a dependency of this repository. Anyone working on the
 extension should not have to download it, so the two commands above reach for it with
 `bunx` instead. It does want **Node 22 or newer**, which is the one thing about it that is

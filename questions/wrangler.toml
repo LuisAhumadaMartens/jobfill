@@ -2,6 +2,7 @@ name = "jobfill-questions"
 main = "worker.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [vars]
 QUESTIONS_THRESHOLD = "5"
@@ -11,10 +12,6 @@ QUESTIONS_RATE = "30"
 binding = "DB"
 database_name = "jobfill-questions"
 database_id = "PENDING_RUN_WRANGLER_D1_CREATE"
-
-[[routes]]
-pattern = "questions.jobfill.app"
-custom_domain = true
 
 [observability]
 enabled = true
