@@ -8,6 +8,21 @@
 
 <tokens>
 
+.root {
+  --origin: bottom right;
+
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  will-change: transform;
+
+  font-family: 'JobFill Lato', 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
 .root button { cursor: pointer; font: inherit; color: inherit; }
 
 .panel,
