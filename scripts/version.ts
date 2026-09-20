@@ -31,9 +31,22 @@ export function nextVersion(declared: string, tags: string[]): string {
   return formatVersion({ ...base, patch: highest.patch + 1 });
 }
 
+export function withVersion(source: string, version: string): string {
+  const replaced = source.replace(/("version"\s*:\s*")[^"]*(")/, `$1${version}$2`);
+  if (replaced === source && !source.includes(`"version": "${version}"`)) {
+    throw new Error('manifest has no version field to write');
+  }
+  return replaced;
+}
+
 if (import.meta.main) {
   const root = dirname(import.meta.dir);
-  const manifest = await Bun.file(join(root, 'src/manifest.json')).json();
+  const path = join(root, 'src/manifest.json');
+  const source = await Bun.file(path).text();
   const tags = (await Bun.$`git tag --list`.text()).split('\n').filter(Boolean);
-  console.log(nextVersion(manifest.version, tags));
+  const version = nextVersion(JSON.parse(source).version, tags);
+
+  if (process.argv.includes('--write')) await Bun.write(path, withVersion(source, version));
+
+  console.log(version);
 }

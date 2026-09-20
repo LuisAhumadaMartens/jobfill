@@ -217,11 +217,17 @@ can be downloaded without cloning anything.
 
 Versions are `major.minor.patch`. **Major and minor you set by hand** in
 `src/manifest.json`; **the patch is worked out from the tags**, counting releases since
-that minor. Raising the minor in the manifest restarts the patch at zero. Nothing is
-committed back to the repository, so the history stays as you left it.
+that minor. Raising the minor in the manifest restarts the patch at zero.
+
+The release then writes that version back into `src/manifest.json` and commits it as
+`Release vX.Y.Z`, so the version the extension reports in `chrome://extensions` is the
+version of the release it came from. The tag points at that commit, and the message
+carries `[skip ci]` so it does not start a run of its own. It does mean `main` moves
+when a release goes out, so pull before your next push.
 
 ```bash
 bun run scripts/version.ts                        # what the next release would be
+bun run scripts/version.ts --write                # and write it into the manifest
 bun run scripts/build.ts --zip --version 1.2.3    # build and package a specific version
 ```
 

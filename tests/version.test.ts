@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { formatVersion, nextVersion, parseVersion } from '../scripts/version.ts';
+import { formatVersion, nextVersion, parseVersion, withVersion } from '../scripts/version.ts';
 
 describe('working out the next version', () => {
   test('the first release of a major.minor uses the number in the manifest', () => {
@@ -34,5 +34,14 @@ describe('working out the next version', () => {
   test('versions round-trip', () => {
     expect(formatVersion(parseVersion('v2.10.3')!)).toBe('2.10.3');
     expect(parseVersion('not a version')).toBeNull();
+  });
+
+  test('writing a version keeps the rest of the manifest byte for byte', () => {
+    const source = '{\n  "manifest_version": 3,\n  "version": "0.1.0",\n  "host_permissions": ["<ats>"]\n}\n';
+    expect(withVersion(source, '2.4.9')).toBe(source.replace('0.1.0', '2.4.9'));
+  });
+
+  test('writing a version refuses a manifest with no version field', () => {
+    expect(() => withVersion('{"name":"JobFill"}', '1.0.0')).toThrow();
   });
 });

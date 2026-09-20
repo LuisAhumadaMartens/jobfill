@@ -52,10 +52,22 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Work out the version
+      - name: Work out the version and write it into the manifest
         if: steps.guard.outputs.skip != 'true'
         id: version
-        run: echo "version=$(bun run scripts/version.ts)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(bun run scripts/version.ts --write)" >> "$GITHUB_OUTPUT"
+
+      - name: Record the version on main
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/manifest.json
+          git diff --cached --quiet || git commit -m "Release v$VERSION [skip ci]"
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "refs/tags/v$VERSION"
 
       - name: Build and package
         if: steps.guard.outputs.skip != 'true'
@@ -72,6 +84,6 @@ jobs:
 
           **Install:** download \`jobfill-$VERSION.zip\`, unzip it, open \`chrome://extensions\`, turn on Developer mode and choose **Load unpacked** on the unzipped folder.
 
-          Major and minor are set by hand in \`src/manifest.json\`. The patch is the number of releases since that minor.
+          Major and minor are set by hand in \`src/manifest.json\`. The patch counts the releases since that minor, and the release commit writes it back so the manifest always matches the tag.
           EOF
-          gh release create "v$VERSION" "jobfill-$VERSION.zip" --title "v$VERSION" --notes-file notes.md
+          gh release create "v$VERSION" "jobfill-$VERSION.zip" --title "v$VERSION" --notes-file notes.md --verify-tag
