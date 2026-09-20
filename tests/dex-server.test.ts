@@ -194,3 +194,31 @@ describe('rate limiting', () => {
     expect(limit.take('1.2.3.4', now + 61_000)).toBe(true);
   });
 });
+
+describe('staying out of search results', () => {
+  let app: { handle: (request: Request) => Promise<Response> };
+
+  beforeAll(async () => {
+    app = (await import('../dex/routes.ts')).routes({
+      store: new SqliteStore(`/tmp/dex-robots-${crypto.randomUUID()}.sqlite`),
+      threshold: 5,
+      perMinute: 100
+    }) as unknown as typeof app;
+  });
+
+  const get = (path: string) => app.handle(new Request(`http://dex.test${path}`));
+
+  test('robots.txt tells crawlers to stay out entirely', async () => {
+    const response = await get('/robots.txt');
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    expect(await response.text()).toContain('Disallow: /');
+  });
+
+  test('every response carries the noindex header, not just the pages', async () => {
+    for (const path of ['/', '/healthz', '/v1/dex', '/v1/dex.csv']) {
+      const response = await get(path);
+      expect({ path, robots: response.headers.get('x-robots-tag') })
+        .toEqual({ path, robots: 'noindex, nofollow' });
+    }
+  });
+});

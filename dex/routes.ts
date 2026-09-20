@@ -55,6 +55,7 @@ export function routes({ store, threshold, perMinute }: Options) {
       }
       set.headers['x-content-type-options'] = 'nosniff';
       set.headers['referrer-policy'] = 'no-referrer';
+      set.headers['x-robots-tag'] = 'noindex, nofollow';
     })
 
     .options('/v1/reports', ({ set, request }) => {
@@ -109,6 +110,11 @@ export function routes({ store, threshold, perMinute }: Options) {
       set.headers['content-type'] = 'text/csv; charset=utf-8';
       set.headers['content-disposition'] = 'attachment; filename="jobfill-dex.csv"';
       return csv(await store.published(threshold));
+    })
+
+    .get('/robots.txt', ({ set }) => {
+      set.headers['content-type'] = 'text/plain; charset=utf-8';
+      return 'User-agent: *\nDisallow: /\n';
     })
 
     .get('/healthz', () => ({ ok: true, threshold }))

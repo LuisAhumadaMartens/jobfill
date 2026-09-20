@@ -34,7 +34,18 @@ const SITE = `
          padding: 1px 6px; font-size: 0.9em; }
 `;
 
-function shell(title: string, description: string, body: string): string {
+const ORIGIN = 'https://jobfill.app';
+
+interface Shell {
+  title: string;
+  description: string;
+  path: string;
+  body: string;
+  noindex?: boolean;
+  extra?: string;
+}
+
+function shell({ title, description, path, body, noindex = false, extra = '' }: Shell): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -42,7 +53,20 @@ function shell(title: string, description: string, body: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${title}</title>
 <meta name="description" content="${description}" />
-<style>${page()}${SITE}</style>
+${noindex
+  ? '<meta name="robots" content="noindex, nofollow" />'
+  : `<link rel="canonical" href="${ORIGIN}${path}" />
+<meta name="robots" content="index, follow" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="JobFill" />
+<meta property="og:title" content="${title}" />
+<meta property="og:description" content="${description}" />
+<meta property="og:url" content="${ORIGIN}${path}" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="${title}" />
+<meta name="twitter:description" content="${description}" />`}
+<meta name="color-scheme" content="dark light" />
+<style>${page()}${SITE}${extra}</style>
 </head>
 <body>
 <main>
@@ -50,6 +74,7 @@ function shell(title: string, description: string, body: string): string {
     <span class="brand">JobFill</span>
     <a href="/">Home</a>
     <a href="/privacy.html">Privacy</a>
+    <a href="/ui">Design</a>
     <a href="https://dex.jobfill.app">Dex</a>
     <a href="https://github.com/LuisAhumadaMartens/jobfill">GitHub</a>
   </nav>
@@ -63,10 +88,11 @@ ${body}
 </html>`;
 }
 
-const home = shell(
-  'JobFill',
-  'A Chrome extension that fills in job applications from answers you teach it once.',
-  `  <h1>Stop retyping the same answers.</h1>
+const home = shell({
+  title: 'JobFill',
+  description: 'A Chrome extension that fills in job applications from answers you teach it once.',
+  path: '/',
+  body: `  <h1>Stop retyping the same answers.</h1>
   <p class="lede">
     JobFill fills in job applications from answers you teach it once. Paste your resume in at
     the start, and the name, email and links half of every application fills itself. Everything
@@ -113,12 +139,13 @@ const home = shell(
     turn on Developer mode, and choose <strong>Load unpacked</strong> on the unzipped folder.
     The setup page opens on first install. Start on the Resume tab.
   </p>`
-);
+});
 
-const privacy = shell(
-  'JobFill privacy',
-  'What JobFill stores, where it stores it, and the one thing that ever leaves your machine.',
-  `  <h1>Privacy</h1>
+const privacy = shell({
+  title: 'JobFill privacy',
+  description: 'What JobFill stores, where it stores it, and the one thing that ever leaves your machine.',
+  path: '/privacy.html',
+  body: `  <h1>Privacy</h1>
   <p class="lede">
     JobFill holds a resume, a profile and a list of answers. All of it stays in this browser
     profile, on your machine. There is no account, no server it reports to, and no network
@@ -194,12 +221,183 @@ const privacy = shell(
     <a href="https://github.com/LuisAhumadaMartens/jobfill/issues">github.com/LuisAhumadaMartens/jobfill</a>.
     This page changes only when the extension does, and its history is in that repository.
   </p>`
-);
+});
+
+
+const SWATCHES = [
+  ['--program', 'the one accent'],
+  ['--program-hover', 'accent, hovered'],
+  ['--program-deep', 'accent, pressed'],
+  ['--ground', 'the page behind everything'],
+  ['--raise', 'a surface sitting on it'],
+  ['--sink', 'a well cut into it'],
+  ['--fg', 'text'],
+  ['--fg-muted', 'text that supports'],
+  ['--fg-faint', 'labels and captions'],
+  ['--line', 'a hairline'],
+  ['--line-2', 'a hairline that wants noticing'],
+  ['--danger', 'destructive'],
+  ['--success', 'went well'],
+  ['--warn', 'worth reading']
+];
+
+const RADII = ['--r-sm', '--r-md', '--r-lg', '--r-xl', '--r-pill'];
+
+const UI_STYLE = `
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .swatch { border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--raise); }
+  .chip { height: 58px; }
+  .swatch .meta { padding: 9px 11px; }
+  .swatch code { display: block; font-size: 12px; background: none; border: 0; padding: 0; color: var(--fg); }
+  .swatch small { color: var(--fg-faint); font-size: 11.5px; }
+  .swatch .value { color: var(--fg-faint); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; gap: 11px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .stack { display: grid; gap: 11px; max-width: 420px; }
+  .radii { display: flex; gap: 14px; flex-wrap: wrap; }
+  .radius { text-align: center; }
+  .radius div { width: 76px; height: 56px; background: var(--raise); border: 1px solid var(--line-2); }
+  .radius code { font-size: 11px; background: none; border: 0; padding: 0; }
+  .demo-box { --r-box: var(--r-lg); padding: 18px 20px; max-width: 420px; }
+  .type div { margin-bottom: 8px; }
+  .note { color: var(--fg-faint); font-size: 13px; max-width: 68ch; }
+`;
+
+const ui = shell({
+  title: 'JobFill design',
+  description: 'Every token and control JobFill is built from, rendered from the same source the extension ships.',
+  path: '/ui',
+  noindex: true,
+  extra: UI_STYLE,
+  body: `  <h1>Design</h1>
+  <p class="lede">
+    Everything JobFill draws comes from one place. This page renders it from that same source,
+    so what you see here is what ships: if a value changes, this changes with it, and if it drifts
+    the drift is visible.
+  </p>
+  <p class="note">
+    Colours are read out of the live stylesheet rather than written down again, which is the only
+    way a page like this can be trusted.
+  </p>
+
+  <h2>Colour</h2>
+  <div class="swatches">
+    ${SWATCHES.map(([token, meaning]) => `
+    <div class="swatch">
+      <div class="chip" style="background: var(${token})"></div>
+      <div class="meta">
+        <code>${token}</code>
+        <small>${meaning}</small>
+        <div class="value" data-token="${token}"></div>
+      </div>
+    </div>`).join('')}
+  </div>
+  <p class="note">Every one of these has a light-mode value too. Change your system theme and this page follows.</p>
+
+  <h2>Type</h2>
+  <div class="type">
+    <div style="font-size:42px;letter-spacing:-0.04em;font-weight:900">Lato Black, 42</div>
+    <div style="font-size:26px;letter-spacing:-0.02em;font-weight:700">Lato Bold, 26</div>
+    <div style="font-size:17px">Lato Regular, 17</div>
+    <div style="font-size:14px;color:var(--fg-muted)">Lato Regular, 14, muted</div>
+    <div style="font-size:12px;color:var(--fg-faint);text-transform:uppercase;letter-spacing:0.07em;font-weight:700">Lato Bold, 12, a label</div>
+    <div style="font-size:15px;font-style:italic">Lato Italic, 15</div>
+  </div>
+
+  <h2>Buttons</h2>
+  <div class="row">
+    <button class="primary">Primary</button>
+    <button class="ghost">Ghost</button>
+    <button class="outline">Outline</button>
+    <button class="danger">Danger</button>
+    <button class="link">Link</button>
+  </div>
+  <div class="row">
+    <button class="primary" disabled>Primary, disabled</button>
+    <button class="ghost" disabled>Ghost, disabled</button>
+  </div>
+
+  <h2>Fields</h2>
+  <div class="stack">
+    <input type="text" placeholder="A text field" />
+    <input type="email" value="luis@example.com" />
+    <select><option>A select</option><option>Another option</option></select>
+    <textarea rows="3" placeholder="A textarea"></textarea>
+    <label style="display:flex;gap:9px;align-items:center;font-size:14px;color:var(--fg-muted)">
+      <input type="checkbox" checked /> A checkbox
+    </label>
+  </div>
+
+  <h2>Surfaces</h2>
+  <div class="box demo-box">
+    <strong>A box</strong>
+    <p style="margin:6px 0 0;font-size:14px">
+      The border is a masked gradient, lit along the top edge, so a surface reads as raised
+      rather than outlined.
+    </p>
+  </div>
+
+  <h2>Pills</h2>
+  <div class="row">
+    <span class="pill">details</span>
+    <span class="pill">attached</span>
+    <span class="pill">used 4 times</span>
+  </div>
+
+  <h2>Corners</h2>
+  <div class="radii">
+    ${RADII.map((token) => `
+    <div class="radius">
+      <div style="border-radius: var(${token})"></div>
+      <code>${token}</code>
+    </div>`).join('')}
+  </div>
+
+  <h2>Tables</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Board</th><th style="text-align:right">Seen by</th></tr></thead>
+    <tbody>
+      <tr><td>Are you legally authorized to work in the United States?</td><td><span class="pill">greenhouse.io</span></td><td class="num">12</td></tr>
+      <tr><td>What are your compensation expectations?</td><td><span class="pill">lever.co</span></td><td class="num">7</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    for (const node of document.querySelectorAll('[data-token]')) {
+      node.textContent = getComputedStyle(document.documentElement)
+        .getPropertyValue(node.dataset.token).trim();
+    }
+  </script>`
+});
 
 await mkdir(DOCS, { recursive: true });
+const ROBOTS = `User-agent: *
+Allow: /
+
+Sitemap: ${ORIGIN}/sitemap.xml
+`;
+
+const PAGES = [
+  { path: '/', priority: '1.0' },
+  { path: '/privacy.html', priority: '0.5' }
+];
+
+const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${PAGES.map(({ path, priority }) => `  <url>
+    <loc>${ORIGIN}${path}</loc>
+    <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>
+    <priority>${priority}</priority>
+  </url>`).join('\n')}
+</urlset>
+`;
+
 await Bun.write(join(DOCS, 'index.html'), home);
 await Bun.write(join(DOCS, 'privacy.html'), privacy);
+await mkdir(join(DOCS, 'ui'), { recursive: true });
+await Bun.write(join(DOCS, 'ui/index.html'), ui);
+await Bun.write(join(DOCS, 'robots.txt'), ROBOTS);
+await Bun.write(join(DOCS, 'sitemap.xml'), SITEMAP);
 await Bun.write(join(DOCS, 'CNAME'), 'jobfill.app\n');
 await Bun.write(join(DOCS, '.nojekyll'), '');
 
-console.log('docs/ written: index.html, privacy.html, CNAME');
+console.log('docs/ written: index.html, privacy.html, ui/index.html, robots.txt, sitemap.xml, CNAME');
