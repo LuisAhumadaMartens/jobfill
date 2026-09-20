@@ -60,8 +60,62 @@ export function chosen(rows: PendingRow[], argument: string): PendingRow[] {
     .map((index) => rows[index - 1]!);
 }
 
+const EVERYTHING = `
+  select
+    o.ats as ats, o.question as question, o.control as control, o.outcome as outcome,
+    count(distinct o.session) as sessions, count(*) as reports,
+    min(o.day) as firstSeen, max(o.day) as lastSeen,
+    coalesce(d.verdict, 'undecided') as verdict
+  from observation o
+  left join decision d on d.question_key = o.question_key and d.outcome = o.outcome
+  group by o.question_key, o.outcome
+  order by sessions desc, question asc
+`;
+
+interface Everything {
+  ats: string;
+  question: string;
+  control: string;
+  outcome: string;
+  sessions: number;
+  reports: number;
+  firstSeen: string;
+  lastSeen: string;
+  verdict: string;
+}
+
+async function dump(threshold: number): Promise<void> {
+  const rows = await d1(EVERYTHING.replace(/\s+/g, ' ').trim()) as Everything[];
+
+  if (!rows.length) {
+    console.log('\nNothing has been reported yet.\n');
+    return;
+  }
+
+  const state = (row: Everything): string => {
+    if (row.verdict === 'approved') return 'published';
+    if (row.verdict === 'blocked') return 'blocked';
+    return row.sessions >= threshold ? 'waiting' : `${threshold - row.sessions} more needed`;
+  };
+
+  console.log(`\n${rows.length} question${rows.length === 1 ? '' : 's'} on record\n`);
+
+  for (const row of rows) {
+    console.log(`  ${row.question}`);
+    console.log(`    ${row.ats} · ${row.control} · ${row.outcome}`);
+    console.log(`    seen by ${row.sessions} (${row.reports} report${row.reports === 1 ? '' : 's'}) · ${row.firstSeen} to ${row.lastSeen} · ${state(row)}`);
+    console.log('');
+  }
+}
+
 if (import.meta.main) {
   const threshold = Number(Bun.env.DEX_THRESHOLD ?? 5);
+
+  if (Bun.argv.includes('--all')) {
+    await dump(threshold);
+    process.exit(0);
+  }
+
   const raw = await d1(PENDING.replace('>= ?', `>= ${threshold}`).replace(/\s+/g, ' ').trim());
   const rows = (raw as Array<Omit<PendingRow, 'options'> & { options: string }>)
     .map((row) => ({ ...row, options: JSON.parse(row.options) as string[] }));

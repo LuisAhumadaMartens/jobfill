@@ -75,6 +75,11 @@ A report carries a random token that is made fresh for that one send and stored 
 exists so the server can count *separate* reports rather than separate people, and so one
 sender cannot inflate that count by sending twice.
 
+```bash
+bun run dex:data      # every question on record, and what state it is in
+bun run dex:review    # only what has reached the threshold and awaits a decision
+```
+
 On top of that, a question is held back until **`DEX_THRESHOLD` separate reports** have
 seen it. A question a company wrote for one candidate never reaches five, so it never
 reaches the page. The dashboard shows how many are being held, because that number is

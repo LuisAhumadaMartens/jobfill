@@ -125,6 +125,7 @@ bun run dev          # rebuild dist/ on save
 bun run playground   # fixture application forms at localhost:3000
 bun run dex          # the question bank at localhost:3100
 bun run dex:dev      # the same thing the way Cloudflare runs it
+bun run dex:data     # every question the dex has on record
 bun run dex:review   # read what is waiting to be published, and decide
 bun run docs         # regenerate docs/ for jobfill.app
 bun test             # 297 tests

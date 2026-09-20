@@ -15,7 +15,8 @@
     "dex:deploy": "bunx wrangler deploy --config dex/wrangler.toml",
     "dex": "bun run dex/server.ts",
     "dex:review": "bun run dex/review.ts",
-    "docs": "bun run scripts/docs.ts"
+    "docs": "bun run scripts/docs.ts",
+    "dex:data": "bun run dex/review.ts --all"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",
