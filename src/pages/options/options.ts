@@ -381,7 +381,9 @@ async function renderContribute(): Promise<void> {
             <button class="danger" data-forget="${index}">Forget</button>
           </div>
         </article>`).join('')
-    : '<p class="empty">Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.</p>';
+    : `<p class="empty">${consent.granted
+        ? 'Nothing waiting. Questions are shared as they are found, so this stays empty unless one could not be sent.'
+        : 'Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.'}</p>`;
 
   $('dex-send').textContent = consent.granted ? 'Send now' : 'Review and send';
   $<HTMLButtonElement>('dex-send').disabled = !waiting.length;
@@ -406,9 +408,12 @@ async function renderContribute(): Promise<void> {
       </span>
     </label>`;
 
-  $('dex-status').textContent = consent.sentTotal
-    ? `${consent.sentTotal} question${consent.sentTotal === 1 ? '' : 's'} sent so far, last on ${new Date(consent.lastSentAt ?? '').toLocaleDateString()}.`
-    : 'Nothing has been sent from this browser.';
+  const sent = consent.sentTotal;
+  const last = consent.lastSentAt ? new Date(consent.lastSentAt) : null;
+
+  $('dex-status').textContent = sent
+    ? `${sent} question${sent === 1 ? '' : 's'} shared from this browser, the last at ${last?.toLocaleString() ?? 'an unknown time'}.`
+    : 'Nothing has been shared from this browser yet.';
 }
 
 async function sendContributions(): Promise<void> {
