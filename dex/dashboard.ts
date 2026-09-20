@@ -1,6 +1,6 @@
 import { page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
-import type { QuestionRow, Totals } from './store.ts';
+import type { EveryRow, QuestionRow, Totals } from './store.ts';
 
 interface View {
   threshold: number;
@@ -42,6 +42,8 @@ const STYLE = `
   .rules { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; }
   .rules ul { margin: 0; padding-left: 20px; line-height: 1.8; color: var(--fg-muted); }
   .rules strong { color: var(--fg); }
+  .note { color: var(--fg-faint); font-size: 13px; }
+  code { background: var(--raise); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 1px 6px; font-size: 0.9em; }
   footer { margin-top: 44px; color: var(--fg-faint); font-size: 12.5px; line-height: 1.7; }
 `;
 
@@ -119,6 +121,66 @@ export function dashboard(view: View): string {
     Take the data: <a href="/v1/dex">/v1/dex</a> as JSON, <a href="/v1/dex.csv">/v1/dex.csv</a> as a spreadsheet.
     Both are the same k-gated view this page shows.
   </footer>
+</main>
+</body>
+</html>`;
+}
+
+export function admin(rows: EveryRow[], threshold: number): string {
+  const state = (row: EveryRow): { label: string; tone: string } => {
+    if (row.verdict === 'approved') return { label: 'published', tone: 'ok' };
+    if (row.verdict === 'blocked') return { label: 'blocked', tone: 'no' };
+    if (row.sessions >= threshold) return { label: 'waiting on you', tone: 'wait' };
+    return { label: `${threshold - row.sessions} more needed`, tone: 'low' };
+  };
+
+  const body = rows.length
+    ? `<table>
+    <thead><tr><th>Question</th><th>Board</th><th>Control</th><th>What happened</th><th style="text-align:right">Seen by</th><th>State</th></tr></thead>
+    <tbody>${rows.map((row) => {
+      const { label, tone } = state(row);
+      return `
+      <tr>
+        <td>
+          <div class="q">${escapeHtml(row.question)}</div>
+          ${row.options.length ? `<div class="opts">${row.options.slice(0, 8).map(escapeHtml).join(' &middot; ')}</div>` : ''}
+          <div class="opts">${escapeHtml(row.firstSeen)} to ${escapeHtml(row.lastSeen)}</div>
+        </td>
+        <td><span class="tag">${escapeHtml(row.ats)}</span></td>
+        <td>${escapeHtml(row.control)}</td>
+        <td>${escapeHtml(OUTCOMES[row.outcome] ?? row.outcome)}</td>
+        <td class="num">${row.sessions}<br /><span class="opts">${row.reports} report${row.reports === 1 ? '' : 's'}</span></td>
+        <td><span class="state ${tone}">${label}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`
+    : '<p class="empty">Nothing has been reported yet.</p>';
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Dex, everything</title>
+<style>${STYLE}
+  .state { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+           padding: 3px 9px; border-radius: var(--r-pill); white-space: nowrap; }
+  .state.ok { background: color-mix(in oklch, var(--success), transparent 82%); color: var(--success); }
+  .state.no { background: color-mix(in oklch, var(--danger), transparent 82%); color: var(--danger); }
+  .state.wait { background: color-mix(in oklch, var(--warn), transparent 82%); color: var(--warn); }
+  .state.low { background: color-mix(in oklch, var(--fg), transparent 90%); color: var(--fg-faint); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Everything on record</h1>
+  <p class="lede">
+    Every question the dex has been told about, including the ones below the publication
+    threshold that nobody else can see. ${rows.length} in total, threshold ${threshold}.
+  </p>
+  <p class="note">Decide with <code>bun run dex:review</code>. This page only reads.</p>
+  ${body}
 </main>
 </body>
 </html>`;

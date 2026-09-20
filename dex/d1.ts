@@ -1,5 +1,5 @@
-import { BOARDS, COUNTS, DECIDE, GATED, GROUPS, INSERT, PENDING, PUBLISHED, WAITING, bindingsFor, withOptions } from './store.ts';
-import type { Board, PendingRow, QuestionRow, Reviewable, Totals, Verdict } from './store.ts';
+import { BOARDS, COUNTS, DECIDE, EVERYTHING, GATED, GROUPS, INSERT, PENDING, PUBLISHED, WAITING, bindingsFor, withOptions } from './store.ts';
+import type { Board, EveryRow, PendingRow, QuestionRow, Reviewable, Totals, Verdict } from './store.ts';
 import type { Report } from '../src/shared/dex.ts';
 
 interface D1Result<T = unknown> {
@@ -53,6 +53,11 @@ export class D1Store implements Reviewable {
       waiting: waiting?.groups ?? 0,
       held: (groups?.groups ?? 0) - (gated?.groups ?? 0) - (waiting?.groups ?? 0)
     };
+  }
+
+  async everything(): Promise<EveryRow[]> {
+    const { results } = await this.db.prepare(EVERYTHING).all<Omit<EveryRow, 'options'> & { options: string }>();
+    return results.map((row) => ({ ...row, options: JSON.parse(row.options) as string[] }));
   }
 
   async pending(threshold: number): Promise<PendingRow[]> {

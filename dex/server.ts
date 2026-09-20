@@ -7,7 +7,12 @@ const THRESHOLD = Number(Bun.env.DEX_THRESHOLD ?? 5);
 const PER_MINUTE = Number(Bun.env.DEX_RATE ?? 30);
 
 export const store = new SqliteStore(DB_PATH);
-export const app = routes({ store, threshold: THRESHOLD, perMinute: PER_MINUTE });
+export const app = routes({
+  store,
+  threshold: THRESHOLD,
+  perMinute: PER_MINUTE,
+  adminPassword: Bun.env.DEX_ADMIN
+});
 
 if (import.meta.main) {
   app.listen(PORT);

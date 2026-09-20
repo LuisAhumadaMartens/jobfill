@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { dashboard } from './dashboard.ts';
+import { admin, dashboard } from './dashboard.ts';
 import { RateLimit } from './limit.ts';
 import { validateReport } from '../src/shared/dex.ts';
 import type { Store } from './store.ts';
@@ -12,6 +12,29 @@ export interface Options {
   store: Store;
   threshold: number;
   perMinute: number;
+  adminPassword?: string;
+}
+
+export function sameSecret(given: string, expected: string): boolean {
+  if (given.length !== expected.length) return false;
+
+  let difference = 0;
+  for (let index = 0; index < given.length; index += 1) {
+    difference |= given.charCodeAt(index) ^ expected.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
+export function passwordFrom(header: string | null): string | null {
+  if (!header?.startsWith('Basic ')) return null;
+
+  try {
+    const decoded = atob(header.slice(6));
+    const split = decoded.indexOf(':');
+    return split < 0 ? null : decoded.slice(split + 1);
+  } catch {
+    return null;
+  }
 }
 
 function allowedOrigin(origin: string | null): string | null {
@@ -37,7 +60,7 @@ export function csv(rows: object[]): string {
   ].join('\n');
 }
 
-export function routes({ store, threshold, perMinute }: Options) {
+export function routes({ store, threshold, perMinute, adminPassword }: Options) {
   const limit = new RateLimit(perMinute);
 
   const view = async () => ({
@@ -123,6 +146,25 @@ export function routes({ store, threshold, perMinute }: Options) {
       set.headers['cache-control'] = 'public, max-age=86400';
       set.headers['content-type'] = 'text/plain; charset=utf-8';
       return 'User-agent: *\nDisallow: /\n';
+    })
+
+    .get('/admin', async ({ request, set }) => {
+      set.headers['cache-control'] = 'no-store';
+
+      if (!adminPassword) {
+        set.status = 404;
+        return 'Not found';
+      }
+
+      const given = passwordFrom(request.headers.get('authorization'));
+      if (!given || !sameSecret(given, adminPassword)) {
+        set.status = 401;
+        set.headers['www-authenticate'] = 'Basic realm="dex", charset="UTF-8"';
+        return 'Unauthorized';
+      }
+
+      set.headers['content-type'] = 'text/html; charset=utf-8';
+      return admin(await store.everything(), threshold);
     })
 
     .get('/healthz', () => ({ ok: true, threshold }))

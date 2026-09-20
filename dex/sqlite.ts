@@ -1,8 +1,8 @@
 import { Database } from 'bun:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BOARDS, COUNTS, DECIDE, GATED, GROUPS, INSERT, PENDING, PUBLISHED, WAITING, bindingsFor, withOptions } from './store.ts';
-import type { Board, PendingRow, QuestionRow, Reviewable, Totals, Verdict } from './store.ts';
+import { BOARDS, COUNTS, DECIDE, EVERYTHING, GATED, GROUPS, INSERT, PENDING, PUBLISHED, WAITING, bindingsFor, withOptions } from './store.ts';
+import type { Board, EveryRow, PendingRow, QuestionRow, Reviewable, Totals, Verdict } from './store.ts';
 import type { Report } from '../src/shared/dex.ts';
 
 export class SqliteStore implements Reviewable {
@@ -50,6 +50,11 @@ export class SqliteStore implements Reviewable {
       waiting: waiting.groups,
       held: groups.groups - gated.groups - waiting.groups
     };
+  }
+
+  async everything(): Promise<EveryRow[]> {
+    const rows = this.db.prepare(EVERYTHING).all() as Array<Omit<EveryRow, 'options'> & { options: string }>;
+    return rows.map((row) => ({ ...row, options: JSON.parse(row.options) as string[] }));
   }
 
   async pending(threshold: number): Promise<PendingRow[]> {

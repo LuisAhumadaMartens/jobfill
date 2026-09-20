@@ -80,6 +80,23 @@ bun run dex:data      # every question on record, and what state it is in
 bun run dex:review    # only what has reached the threshold and awaits a decision
 ```
 
+There is a read-only web version of the same thing at `/admin`, behind HTTP Basic auth.
+It does not exist until a password is set, so an unconfigured deployment answers 404
+rather than leaving a door open:
+
+```bash
+bunx wrangler secret put DEX_ADMIN --config dex/wrangler.toml
+```
+
+The password lives in Cloudflare, never in this repository and never in the build. Use a
+long random one from a password manager; the username is ignored. `/admin` is `no-store`
+and the whole origin is `noindex`, so it is never cached and never indexed.
+
+For a stronger story, put **Cloudflare Access** in front of the path instead: it is free
+for up to 50 users, authenticates against Google or GitHub, logs who opened it, and can be
+revoked without touching the deployment. The Basic auth stays underneath it either way, so
+a misconfigured policy still does not expose the page.
+
 On top of that, a question is held back until **`DEX_THRESHOLD` separate reports** have
 seen it. A question a company wrote for one candidate never reaches five, so it never
 reaches the page. The dashboard shows how many are being held, because that number is

@@ -41,11 +41,25 @@ export interface PendingRow {
 
 export type Verdict = 'approved' | 'blocked';
 
+export interface EveryRow {
+  ats: string;
+  question: string;
+  control: string;
+  outcome: string;
+  options: string[];
+  sessions: number;
+  reports: number;
+  firstSeen: string;
+  lastSeen: string;
+  verdict: 'approved' | 'blocked' | 'undecided';
+}
+
 export interface Store {
   record(report: Report): Promise<number>;
   published(threshold: number): Promise<QuestionRow[]>;
   boards(threshold: number): Promise<Board[]>;
   totals(threshold: number): Promise<Totals>;
+  everything(): Promise<EveryRow[]>;
 }
 
 export interface Reviewable extends Store {
@@ -109,6 +123,19 @@ export const BOARDS = `
     group by o.ats, o.question_key
     having count(distinct o.session) >= ?
   ) group by ats order by questions desc
+`;
+
+export const EVERYTHING = `
+  select
+    o.ats as ats, o.question as question, o.control as control, o.outcome as outcome,
+    o.options as options,
+    count(distinct o.session) as sessions, count(*) as reports,
+    min(o.day) as firstSeen, max(o.day) as lastSeen,
+    coalesce(d.verdict, 'undecided') as verdict
+  from observation o
+  left join decision d on d.question_key = o.question_key and d.outcome = o.outcome
+  group by o.question_key, o.outcome
+  order by sessions desc, question asc
 `;
 
 export const COUNTS = `

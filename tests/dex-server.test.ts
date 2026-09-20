@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { unlinkSync } from 'node:fs';
+import { routes } from '../dex/routes.ts';
 import { SqliteStore } from '../dex/sqlite.ts';
 import { questionKey } from '../dex/store.ts';
 import type { QuestionRow } from '../dex/store.ts';
@@ -253,5 +254,75 @@ describe('what the edge is allowed to keep', () => {
   test('health is never cached, because a cached health check answers nothing', async () => {
     const response = await app.handle(new Request('http://dex.test/healthz'));
     expect(response.headers.get('cache-control')).toBe('no-store');
+  });
+});
+
+describe('the private view of everything', () => {
+  const PASSWORD = 'correct-horse-battery-staple';
+
+  const build = (password?: string) => (routes as unknown as (o: object) => { handle: (r: Request) => Promise<Response> })({
+    store: new SqliteStore(`/tmp/dex-admin-${crypto.randomUUID()}.sqlite`),
+    threshold: 5,
+    perMinute: 100,
+    adminPassword: password
+  });
+
+  const basic = (user: string, password: string) => `Basic ${btoa(`${user}:${password}`)}`;
+
+  test('the page does not exist at all until a password is configured', async () => {
+    const response = await build(undefined).handle(new Request('http://dex.test/admin'));
+    expect(response.status).toBe(404);
+  });
+
+  test('without credentials it asks for them rather than answering', async () => {
+    const response = await build(PASSWORD).handle(new Request('http://dex.test/admin'));
+    expect(response.status).toBe(401);
+    expect(response.headers.get('www-authenticate')).toContain('Basic');
+  });
+
+  test('a wrong password is refused', async () => {
+    const response = await build(PASSWORD).handle(new Request('http://dex.test/admin', {
+      headers: { authorization: basic('dex', 'hunter2') }
+    }));
+    expect(response.status).toBe(401);
+  });
+
+  test('the right password shows everything on record', async () => {
+    const response = await build(PASSWORD).handle(new Request('http://dex.test/admin', {
+      headers: { authorization: basic('dex', PASSWORD) }
+    }));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('Everything on record');
+  });
+
+  test('the username is ignored, only the password decides', async () => {
+    const response = await build(PASSWORD).handle(new Request('http://dex.test/admin', {
+      headers: { authorization: basic('anyone-at-all', PASSWORD) }
+    }));
+    expect(response.status).toBe(200);
+  });
+
+  test('a private page is never cached anywhere', async () => {
+    const response = await build(PASSWORD).handle(new Request('http://dex.test/admin', {
+      headers: { authorization: basic('dex', PASSWORD) }
+    }));
+    expect(response.headers.get('cache-control')).toBe('no-store');
+  });
+
+  test('comparing secrets does not short-circuit on the first wrong character', async () => {
+    const { sameSecret } = await import('../dex/routes.ts');
+    expect(sameSecret('abcdef', 'abcdef')).toBe(true);
+    expect(sameSecret('abcdef', 'abcdeX')).toBe(false);
+    expect(sameSecret('Xbcdef', 'abcdef')).toBe(false);
+    expect(sameSecret('abc', 'abcdef')).toBe(false);
+  });
+
+  test('a malformed authorization header is refused rather than throwing', async () => {
+    for (const header of ['Bearer abc', 'Basic !!!not-base64!!!', 'Basic ' + btoa('nocolon'), '']) {
+      const response = await build(PASSWORD).handle(new Request('http://dex.test/admin', {
+        headers: { authorization: header }
+      }));
+      expect({ header, status: response.status }).toEqual({ header, status: 401 });
+    }
   });
 });
