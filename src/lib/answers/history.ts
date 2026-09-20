@@ -8,16 +8,24 @@ export const EDUCATION_KINDS = ['school', 'degree', 'major', 'gpa', 'graduationD
 
 type FieldLike = Partial<ScannedField & SerializedField>;
 
+const LIST_WORDS = [
+  'experience', 'employment', 'work', 'job', 'position', 'employer', 'company', 'role',
+  'reference', 'referee',
+  'language',
+  'certification', 'certificate',
+  'school', 'education', 'university', 'degree'
+].join('|');
+
 export function historyIndexOf(field: FieldLike): number {
   const identity = `${field.name ?? ''} ${field.id ?? ''}`;
 
   const bracket = /\[(\d{1,2})\]/.exec(identity);
   if (bracket) return Number(bracket[1]);
 
-  const suffixed = /(?:experience|employment|work|job|position|employer|company)[^a-z0-9]{0,3}(\d{1,2})/i.exec(identity);
+  const suffixed = new RegExp(`(?:${LIST_WORDS})[^a-z0-9]{0,3}(\\d{1,2})`, 'i').exec(identity);
   if (suffixed) return Number(suffixed[1]);
 
-  const labelled = /\b(?:employer|position|job|experience|company|role)\s*#?\s*(\d{1,2})\b/i.exec(field.label ?? '');
+  const labelled = new RegExp(`\\b(?:${LIST_WORDS})\\s*#?\\s*(\\d{1,2})\\b`, 'i').exec(field.label ?? '');
   if (labelled) return Math.max(0, Number(labelled[1]) - 1);
 
   return 0;
@@ -64,14 +72,14 @@ const REFERENCE_FIELDS: Record<string, keyof ReferenceEntry> = {
   referenceRelationship: 'relationship'
 };
 
-export function valueFromReferences(field: FieldLike, references: ReferenceEntry[]): string | null {
+function valueFromReferences(field: FieldLike, references: ReferenceEntry[]): string | null {
   const key = field.kind ? REFERENCE_FIELDS[field.kind] : undefined;
   if (!key || !references.length) return null;
   const entry = references[historyIndexOf(field)];
   return entry ? entry[key] || null : null;
 }
 
-export function valueFromLanguages(field: FieldLike, languages: LanguageEntry[]): string | null {
+function valueFromLanguages(field: FieldLike, languages: LanguageEntry[]): string | null {
   if (!languages.length) return null;
   const entry = languages[historyIndexOf(field)];
   if (!entry) return null;
@@ -80,7 +88,7 @@ export function valueFromLanguages(field: FieldLike, languages: LanguageEntry[])
   return null;
 }
 
-export function valueFromCertifications(field: FieldLike, certifications: CertificationEntry[]): string | null {
+function valueFromCertifications(field: FieldLike, certifications: CertificationEntry[]): string | null {
   if (field.kind !== 'certificationName' || !certifications.length) return null;
   const entry = certifications[historyIndexOf(field)];
   return entry ? entry.name || null : null;
@@ -100,7 +108,7 @@ function partOf(value: string, want: 'month' | 'year'): string | null {
   return null;
 }
 
-export function datePartFor(field: FieldLike, value: string): string | null {
+function datePartFor(field: FieldLike, value: string): string | null {
   const haystack = `${field.label ?? ''} ${field.name ?? ''} ${field.id ?? ''}`.toLowerCase();
   if (/\bmonth\b/.test(haystack)) return partOf(value, 'month');
   if (/\byear\b/.test(haystack)) return partOf(value, 'year');

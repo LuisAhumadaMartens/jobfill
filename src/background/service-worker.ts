@@ -65,7 +65,7 @@ async function collect(url: string, plans: FieldPlan[]): Promise<void> {
   if (!plans.length) return;
 
   const consent = await readConsent();
-  if (!consent.askAfterApplying) return;
+  if (!consent.collect) return;
 
   let host: string;
   try {
@@ -77,8 +77,7 @@ async function collect(url: string, plans: FieldPlan[]): Promise<void> {
   const { profile } = await load();
   const added = await enqueue(observationsFor(plans, host, profile));
 
-  if (!dueToSend(consent, added)) return;
-  if (!(await hasPermission(DEX_ORIGIN))) return;
+  if (!dueToSend(consent, added, await hasPermission(DEX_ORIGIN))) return;
 
   await sendQueue(DEX_ORIGIN, chrome.runtime.getManifest().version);
 }

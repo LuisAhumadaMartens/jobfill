@@ -20,7 +20,8 @@ let pending: ImportChange[] = [];
 let filter = '';
 let savedTimer: ReturnType<typeof setTimeout> | null = null;
 let waiting: Observation[] = [];
-let consent: queue.Consent = { granted: false, askAfterApplying: true, autoSend: true, lastSentAt: null, sentTotal: 0 };
+let consent: queue.Consent = { collect: true, autoSend: true, lastSentAt: null, sentTotal: 0 };
+let allowed = false;
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -362,8 +363,9 @@ const OUTCOMES: Record<string, string> = {
 async function renderContribute(): Promise<void> {
   waiting = await queue.readQueue();
   consent = await queue.readConsent();
+  allowed = await hasPermission(DEX_ORIGIN);
 
-  $('dex-gate').textContent = consent.granted
+  $('dex-gate').textContent = allowed
     ? 'Sharing is on. Questions go as they are found, and a question stays private until five separate reports have seen it and a person has approved it.'
     : 'Nothing has left this browser yet. Sending once grants the network permission, and after that questions go on their own.';
 
@@ -381,18 +383,18 @@ async function renderContribute(): Promise<void> {
             <button class="danger" data-forget="${index}">Forget</button>
           </div>
         </article>`).join('')
-    : `<p class="empty">${consent.granted
+    : `<p class="empty">${allowed
         ? 'Nothing waiting. Questions are shared as they are found, so this stays empty unless one could not be sent.'
         : 'Nothing waiting. JobFill adds a question here when it cannot answer one on a job board.'}</p>`;
 
-  $('dex-send').textContent = consent.granted ? 'Send now' : 'Review and send';
+  $('dex-send').textContent = allowed ? 'Send now' : 'Review and send';
   $<HTMLButtonElement>('dex-send').disabled = !waiting.length;
   $<HTMLButtonElement>('dex-copy').disabled = !waiting.length;
   $<HTMLButtonElement>('dex-clear').disabled = !waiting.length;
 
   $('dex-settings').innerHTML = `
     <label class="setting">
-      <input type="checkbox" id="dex-collect" ${consent.askAfterApplying ? 'checked' : ''} />
+      <input type="checkbox" id="dex-collect" ${consent.collect ? 'checked' : ''} />
       <span class="text">
         <strong>Keep questions JobFill could not answer</strong>
         <span>Held in this browser and shown above.</span>
@@ -402,7 +404,7 @@ async function renderContribute(): Promise<void> {
       <input type="checkbox" id="dex-auto" ${consent.autoSend ? 'checked' : ''} />
       <span class="text">
         <strong>Share them as they are found</strong>
-        <span>${consent.granted
+        <span>${allowed
           ? 'A question is sent as soon as it is collected. Turn this off and nothing leaves again.'
           : 'Press Review and send once to let the browser grant network access. After that it happens on its own.'}</span>
       </span>
@@ -420,12 +422,10 @@ async function sendContributions(): Promise<void> {
   const origin = DEX_ORIGIN;
 
   if (!(await hasPermission(origin))) {
-    const granted = await askPermission(origin);
-    if (!granted) {
+    if (!(await askPermission(origin))) {
       flash('Not sent');
       return;
     }
-    await queue.writeConsent({ granted: true });
   }
 
   flash('Sending...');
@@ -462,7 +462,7 @@ function wireContribute(): void {
   $('dex-settings').addEventListener('change', async (event) => {
     const input = event.target as HTMLInputElement;
 
-    if (input.id === 'dex-collect') await queue.writeConsent({ askAfterApplying: input.checked });
+    if (input.id === 'dex-collect') await queue.writeConsent({ collect: input.checked });
     else if (input.id === 'dex-auto') await queue.writeConsent({ autoSend: input.checked });
     else return;
 
@@ -822,8 +822,14 @@ async function boot(): Promise<void> {
     if (!confirm('Erase every answer, your profile and the stored resume? This cannot be undone.')) return;
     state = await storage.clearAll();
     renderProfile();
+    renderHistory();
+    renderEducation();
+    renderSkills();
+    renderResumes();
+    renderAllRecords();
     renderAnswers();
     renderSettings();
+    await renderContribute();
     flash('Everything erased');
   });
 

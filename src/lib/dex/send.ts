@@ -2,7 +2,6 @@ import { REPORT_SCHEMA, LIMITS, type Observation, type Report } from '../../shar
 import { batches, readConsent, readQueue, writeConsent, writeQueue } from './queue.ts';
 
 export const DEX_ORIGIN = 'https://dex.jobfill.app';
-export const DEX_DEV_ORIGIN = 'http://localhost:3100';
 
 export interface SendResult {
   sent: number;

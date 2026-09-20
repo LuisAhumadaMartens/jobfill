@@ -7,8 +7,7 @@ const CONSENT = 'dexConsent';
 export const QUEUE_CAP = 200;
 
 export interface Consent {
-  granted: boolean;
-  askAfterApplying: boolean;
+  collect: boolean;
   autoSend: boolean;
   lastSentAt: string | null;
   sentTotal: number;
@@ -16,15 +15,15 @@ export interface Consent {
 
 export const COALESCE_MS = 5000;
 
-export function dueToSend(consent: Consent, added: number, now = Date.now()): boolean {
-  if (!consent.autoSend || !consent.granted || !added) return false;
+export function dueToSend(consent: Consent, added: number, allowed: boolean, now = Date.now()): boolean {
+  if (!consent.autoSend || !allowed || !added) return false;
   if (!consent.lastSentAt) return true;
 
   const last = Date.parse(consent.lastSentAt);
   return !Number.isFinite(last) || now - last >= COALESCE_MS;
 }
 
-const BLANK: Consent = { granted: false, askAfterApplying: true, autoSend: true, lastSentAt: null, sentTotal: 0 };
+const BLANK: Consent = { collect: true, autoSend: true, lastSentAt: null, sentTotal: 0 };
 
 function keyOf(observation: Observation): string {
   return `${observation.ats}|${observation.question.toLowerCase()}|${observation.outcome}`;
