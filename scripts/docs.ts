@@ -1,36 +1,26 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { page } from '../design/index.ts';
+import { BACKDROP, LAYOUT, page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
 
 const ROOT = dirname(import.meta.dir);
 const DOCS = join(ROOT, 'docs');
 
 const SITE = `
-  main { max-width: 900px; margin: 0 auto; padding: 44px 22px 90px; }
-
   nav { display: flex; gap: 20px; align-items: center; margin-bottom: 52px; }
   nav .brand { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-right: auto; text-transform: uppercase; }
   nav a { text-decoration: none; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
           letter-spacing: 0.06em; color: var(--fg-muted); }
   nav a:hover { color: var(--program); }
 
-  h1 { font-size: 46px; line-height: 1.05; letter-spacing: 0.01em; margin: 0 0 18px; text-transform: uppercase; }
-  h2 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
-       color: var(--program); margin: 56px 0 18px; font-weight: 400;
-       border-left: 2px solid var(--program); padding-left: 12px; }
-  h3 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+  h1 { font-size: 46px; line-height: 1.05; margin-bottom: 18px; }
+  .lede { font-size: 19px; max-width: 58ch; }
 
-  p { color: var(--fg); line-height: 1.65; max-width: 66ch; margin: 0 0 14px; }
-  .lede { font-size: 19px; color: var(--fg-muted); max-width: 58ch; }
-
-  .cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 10px; }
-  .cta a { text-decoration: none; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 10px; }
   .cta svg { width: 15px; height: 15px; flex: none; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px;
-           background: var(--line); border: 1px solid var(--line); }
-  .card { background: var(--ground); padding: 18px 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: color-mix(in oklch, var(--raise), transparent 70%); border: 1px solid var(--line); padding: 18px 20px; }
   .card p { margin: 0; font-size: 14px; color: var(--fg-muted); }
 
   ul { color: var(--fg); line-height: 1.8; max-width: 66ch; padding-left: 18px; }
@@ -38,13 +28,9 @@ const SITE = `
 
   .boards { display: flex; flex-wrap: wrap; gap: 6px; }
   .boards span { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
-                 border: 1px solid var(--line); padding: 3px 9px; color: var(--fg-muted); }
-
-  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
-           color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px;
-           text-transform: uppercase; letter-spacing: 0.05em; }
-
-  code { font-family: var(--font-mono); background: var(--sink); border: 1px solid var(--line); padding: 1px 6px; font-size: 0.92em; }
+                 border: 1px solid var(--line); padding: 4px 10px; color: var(--fg-muted);
+                 background: oklch(0 0 0 / 0.4); transition: border-color 160ms var(--ease), color 160ms var(--ease); }
+  .boards span:hover { border-color: var(--program); color: var(--program); }
 `;
 
 const GITHUB_MARK = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
@@ -84,7 +70,7 @@ ${noindex
 <meta name="twitter:title" content="${title}" />
 <meta name="twitter:description" content="${description}" />`}
 <meta name="color-scheme" content="dark light" />
-<style>${page()}${SITE}${extra}</style>
+<style>${page()}${BACKDROP}${LAYOUT}${SITE}${extra}</style>
 </head>
 <body>
 <main>
@@ -115,25 +101,25 @@ const home = shell({
   </p>
 
   <div class="cta">
-    <a class="primary" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest">${CHROME_MARK} Download</a>
-    <a class="ghost" href="https://github.com/LuisAhumadaMartens/jobfill">${GITHUB_MARK} Source</a>
+    <a class="skew on" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest"><span>${CHROME_MARK} Download</span></a>
+    <a class="skew" href="https://github.com/LuisAhumadaMartens/jobfill"><span>${GITHUB_MARK} Source</span></a>
   </div>
 
   <h2>What it does</h2>
   <div class="cards">
-    <div class="card">
+    <div class="card hud">
       <h3>Reads your resume here</h3>
       <p>PDF, DOCX or text, parsed in your browser.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Knows the standard questions</h3>
       <p>About 45 by shape, so a new board still fills on the first visit.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Learns the rest</h3>
       <p>Answer once in the panel and it keeps the answer and the wording.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Asks before it keeps</h3>
       <p>On submit it offers what you typed. You tick what to remember.</p>
     </div>

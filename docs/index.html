@@ -226,6 +226,40 @@ input[type='checkbox'] { accent-color: var(--program); width: 14px; height: 14px
 .link:hover { color: var(--fg-bright); }
 .link.muted { color: var(--fg-faint); font-weight: 400; }
 
+
+.skew {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in oklch, var(--fg), transparent 80%);
+  color: var(--fg-bright);
+  background: transparent;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 10px 20px;
+  text-decoration: none;
+  transform: skewX(-10deg);
+  transition: border-color 160ms var(--ease), color 160ms var(--ease), background-color 160ms var(--ease);
+}
+
+.skew > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  transform: skewX(10deg);
+}
+
+.skew:hover { border-color: var(--program); color: var(--program); }
+
+.skew.on {
+  border-color: var(--program);
+  background: var(--program);
+  color: var(--program-fg);
+}
+
+.skew.on:hover { background: var(--program-hover); border-color: var(--program-hover); color: var(--program-fg); }
+
 .box {
   position: relative;
   background-color: var(--fill);
@@ -257,6 +291,39 @@ input[type='checkbox'] { accent-color: var(--program); width: 14px; height: 14px
   width: calc(100% + 2px);
   height: calc(100% + 2px);
   opacity: 1;
+}
+
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 52px 0 20px;
+}
+
+.section::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--program);
+  rotate: 45deg;
+  flex: none;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.section::after {
+  content: '';
+  height: 1px;
+  background: color-mix(in oklch, var(--fg), transparent 90%);
+  flex: 1 1 16px;
 }
 
 
@@ -300,7 +367,122 @@ tbody tr:hover { background: color-mix(in oklch, var(--program), transparent 96%
   color: var(--fg-faint);
 }
 
-  main { max-width: 900px; margin: 0 auto; padding: 44px 22px 90px; }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image: radial-gradient(var(--raise) 1.5px, transparent 0);
+  background-size: 20px 20px;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 0%, var(--ground) 120%);
+}
+
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.5;
+  background: linear-gradient(to bottom, transparent 50%, oklch(0 0 0 / 0.1) 50%);
+  background-size: 100% 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html::after { display: none; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--ground); }
+::-webkit-scrollbar-thumb { background: var(--raise); border: 1px solid var(--program); }
+::-webkit-scrollbar-thumb:hover { background: var(--program); }
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 44px 22px 90px;
+}
+
+h1 {
+  font-size: 34px;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 52px 0 20px;
+}
+
+h2::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--program);
+  rotate: 45deg;
+  flex: none;
+}
+
+h2::after {
+  content: '';
+  height: 1px;
+  background: color-mix(in oklch, var(--fg), transparent 90%);
+  flex: 1 1 16px;
+}
+
+h3 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+
+p { color: var(--fg); line-height: 1.65; max-width: 66ch; margin: 0 0 14px; }
+.lede { font-size: 18px; color: var(--fg-muted); max-width: 62ch; }
+.note { color: var(--fg-faint); font-size: 13px; max-width: 66ch; }
+
+code {
+  font-family: var(--font-mono);
+  background: var(--sink);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+  font-size: 0.92em;
+}
+
+footer {
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.empty {
+  max-width: none;
+  border: 1px solid var(--line);
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 
   nav { display: flex; gap: 20px; align-items: center; margin-bottom: 52px; }
   nav .brand { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-right: auto; text-transform: uppercase; }
@@ -308,22 +490,14 @@ tbody tr:hover { background: color-mix(in oklch, var(--program), transparent 96%
           letter-spacing: 0.06em; color: var(--fg-muted); }
   nav a:hover { color: var(--program); }
 
-  h1 { font-size: 46px; line-height: 1.05; letter-spacing: 0.01em; margin: 0 0 18px; text-transform: uppercase; }
-  h2 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
-       color: var(--program); margin: 56px 0 18px; font-weight: 400;
-       border-left: 2px solid var(--program); padding-left: 12px; }
-  h3 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+  h1 { font-size: 46px; line-height: 1.05; margin-bottom: 18px; }
+  .lede { font-size: 19px; max-width: 58ch; }
 
-  p { color: var(--fg); line-height: 1.65; max-width: 66ch; margin: 0 0 14px; }
-  .lede { font-size: 19px; color: var(--fg-muted); max-width: 58ch; }
-
-  .cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 10px; }
-  .cta a { text-decoration: none; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 10px; }
   .cta svg { width: 15px; height: 15px; flex: none; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px;
-           background: var(--line); border: 1px solid var(--line); }
-  .card { background: var(--ground); padding: 18px 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: color-mix(in oklch, var(--raise), transparent 70%); border: 1px solid var(--line); padding: 18px 20px; }
   .card p { margin: 0; font-size: 14px; color: var(--fg-muted); }
 
   ul { color: var(--fg); line-height: 1.8; max-width: 66ch; padding-left: 18px; }
@@ -331,13 +505,9 @@ tbody tr:hover { background: color-mix(in oklch, var(--program), transparent 96%
 
   .boards { display: flex; flex-wrap: wrap; gap: 6px; }
   .boards span { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
-                 border: 1px solid var(--line); padding: 3px 9px; color: var(--fg-muted); }
-
-  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
-           color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px;
-           text-transform: uppercase; letter-spacing: 0.05em; }
-
-  code { font-family: var(--font-mono); background: var(--sink); border: 1px solid var(--line); padding: 1px 6px; font-size: 0.92em; }
+                 border: 1px solid var(--line); padding: 4px 10px; color: var(--fg-muted);
+                 background: oklch(0 0 0 / 0.4); transition: border-color 160ms var(--ease), color 160ms var(--ease); }
+  .boards span:hover { border-color: var(--program); color: var(--program); }
 </style>
 </head>
 <body>
@@ -355,25 +525,25 @@ tbody tr:hover { background: color-mix(in oklch, var(--program), transparent 96%
   </p>
 
   <div class="cta">
-    <a class="primary" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.9 4.02L3.5 5.6A10 10 0 0 1 12 2Zm-9.5 5.35 4.32 7.48A5 5 0 0 0 12 17c.2 0 .4-.01.6-.04l-3.6 6.23A10 10 0 0 1 2 12c0-1.66.4-3.22 1.1-4.6l-.6-.05ZM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm9.3.5A10 10 0 0 1 12 22h-.3l4.35-7.53A5 5 0 0 0 16.5 9h4.8Z"/></svg> Download</a>
-    <a class="ghost" href="https://github.com/LuisAhumadaMartens/jobfill"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> Source</a>
+    <a class="skew on" href="https://github.com/LuisAhumadaMartens/jobfill/releases/latest"><span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 1 8.66 5H12a5 5 0 0 0-4.9 4.02L3.5 5.6A10 10 0 0 1 12 2Zm-9.5 5.35 4.32 7.48A5 5 0 0 0 12 17c.2 0 .4-.01.6-.04l-3.6 6.23A10 10 0 0 1 2 12c0-1.66.4-3.22 1.1-4.6l-.6-.05ZM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm9.3.5A10 10 0 0 1 12 22h-.3l4.35-7.53A5 5 0 0 0 16.5 9h4.8Z"/></svg> Download</span></a>
+    <a class="skew" href="https://github.com/LuisAhumadaMartens/jobfill"><span><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> Source</span></a>
   </div>
 
   <h2>What it does</h2>
   <div class="cards">
-    <div class="card">
+    <div class="card hud">
       <h3>Reads your resume here</h3>
       <p>PDF, DOCX or text, parsed in your browser.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Knows the standard questions</h3>
       <p>About 45 by shape, so a new board still fills on the first visit.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Learns the rest</h3>
       <p>Answer once in the panel and it keeps the answer and the wording.</p>
     </div>
-    <div class="card">
+    <div class="card hud">
       <h3>Asks before it keeps</h3>
       <p>On submit it offers what you typed. You tick what to remember.</p>
     </div>

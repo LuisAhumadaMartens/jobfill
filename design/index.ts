@@ -1,7 +1,8 @@
 import { tokens, type TokenOptions } from './tokens.ts';
 import { HUD, PILL, TABLE, edge } from './surfaces.ts';
+import { BACKDROP, LAYOUT, SECTION, SKEW } from './backdrop.ts';
 
-export { tokens, edge, HUD, TABLE, PILL };
+export { tokens, edge, HUD, TABLE, PILL, BACKDROP, LAYOUT, SECTION, SKEW };
 
 function face(family: string, weight: number, file: string): string {
   return `@font-face {
@@ -139,5 +140,5 @@ export const CONTROLS = `
 `;
 
 export function page(options: TokenOptions = {}): string {
-  return [tokens(options), BASE, FIELDS, CONTROLS, edge('.box'), HUD, TABLE, PILL].join('\n');
+  return [tokens(options), BASE, FIELDS, CONTROLS, SKEW, edge('.box'), HUD, SECTION, TABLE, PILL].join('\n');
 }

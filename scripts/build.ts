@@ -1,6 +1,6 @@
 import { rm, mkdir, cp, readdir, stat } from 'node:fs/promises';
 import { writeIcons } from './icons.ts';
-import { FONTS, page, tokens } from '../design/index.ts';
+import { BACKDROP, FONTS, page, tokens } from '../design/index.ts';
 import { existsSync, watch } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 
@@ -29,7 +29,7 @@ const STATIC_FILES: Array<[from: string, to: string]> = [
 
 async function writeStylesheets(): Promise<void> {
   await mkdir(join(DIST, 'pages'), { recursive: true });
-  await Bun.write(join(DIST, 'pages/theme.css'), [FONTS, page()].join('\n'));
+  await Bun.write(join(DIST, 'pages/theme.css'), [FONTS, page(), BACKDROP].join('\n'));
 
   const panel = await Bun.file(join(SRC, 'content/panel.css')).text();
   await mkdir(join(DIST, 'content'), { recursive: true });

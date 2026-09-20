@@ -1,4 +1,4 @@
-import { page } from '../design/index.ts';
+import { BACKDROP, LAYOUT, page } from '../design/index.ts';
 import { ATS_HOSTS } from '../src/lib/sites.ts';
 import type { EveryRow, QuestionRow, Totals } from './store.ts';
 
@@ -25,17 +25,11 @@ function escapeHtml(value: string): string {
 
 const STYLE = `
   ${page()}
+  ${BACKDROP}
+  ${LAYOUT}
 
-  main { max-width: 980px; margin: 0 auto; padding: 44px 22px 90px; }
-  h1 { font-size: 34px; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.01em; }
-  .lede { color: var(--fg-muted); line-height: 1.65; max-width: 66ch; margin: 0 0 12px; }
-  h2 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
-       color: var(--program); margin: 48px 0 16px; font-weight: 400;
-       border-left: 2px solid var(--program); padding-left: 12px; }
-
-  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
-            background: var(--line); border: 1px solid var(--line); }
-  .stat { background: var(--ground); padding: 16px 18px; }
+  .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: color-mix(in oklch, var(--raise), transparent 70%); border: 1px solid var(--line); padding: 16px 18px; }
   .stat b { display: block; font-size: 28px; color: var(--fg-bright); }
   .stat span { font-family: var(--font-mono); color: var(--fg-faint); font-size: 11px;
                text-transform: uppercase; letter-spacing: 0.06em; }
@@ -44,16 +38,9 @@ const STYLE = `
   .opts { color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px; margin-top: 4px; }
   .tag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
          border: 1px solid var(--line); padding: 2px 8px; color: var(--program); white-space: nowrap; }
-  .empty { border: 1px solid var(--line); padding: 32px; text-align: center; color: var(--fg-faint);
-           font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .rules { border: 1px solid var(--line); padding: 18px 22px; }
+  .rules { border: 1px solid var(--line); padding: 18px 22px; background: color-mix(in oklch, var(--raise), transparent 70%); }
   .rules ul { margin: 0; padding-left: 18px; line-height: 1.8; color: var(--fg-muted); }
   .rules strong { color: var(--fg-bright); }
-  .note { color: var(--fg-faint); font-size: 13px; max-width: 66ch; }
-  code { font-family: var(--font-mono); background: var(--sink); border: 1px solid var(--line); padding: 1px 6px; }
-  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
-           color: var(--fg-faint); font-family: var(--font-mono); font-size: 11px;
-           text-transform: uppercase; letter-spacing: 0.05em; }
 `;
 
 export function dashboard(view: View): string {
@@ -94,10 +81,10 @@ export function dashboard(view: View): string {
 
   <h2>What is here</h2>
   <div class="totals">
-    <div class="stat"><b>${view.totals.published}</b><span>questions published</span></div>
-    <div class="stat"><b>${view.totals.waiting}</b><span>waiting on review</span></div>
-    <div class="stat"><b>${view.totals.held}</b><span>held back</span></div>
-    <div class="stat"><b>${view.totals.observations}</b><span>reports</span></div>
+    <div class="stat hud"><b>${view.totals.published}</b><span>questions published</span></div>
+    <div class="stat hud"><b>${view.totals.waiting}</b><span>waiting on review</span></div>
+    <div class="stat hud"><b>${view.totals.held}</b><span>held back</span></div>
+    <div class="stat hud"><b>${view.totals.observations}</b><span>reports</span></div>
   </div>
 
   <h2>What is collected, and what never is</h2>

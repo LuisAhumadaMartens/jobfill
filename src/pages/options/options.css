@@ -12,9 +12,10 @@
 }
 
 .topbar h1 {
-  font-size: 15px;
-  margin: 0 8px 0 0;
-  letter-spacing: -0.01em;
+  font-size: 16px;
+  margin: 0 10px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .topbar .saved {
@@ -65,9 +66,9 @@
 }
 
 main {
-  max-width: 780px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 30px 22px 90px;
+  padding: 34px 22px 90px;
 }
 
 .intro { margin-bottom: 22px; }
@@ -75,15 +76,31 @@ main {
 .intro p { margin: 0; color: var(--fg-muted); max-width: 62ch; line-height: 1.6; }
 
 h3 {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-bright);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--program);
-  border-left: 2px solid var(--program);
-  padding-left: 10px;
-  margin: 34px 0 14px;
+  margin: 38px 0 16px;
+}
+
+h3::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: var(--program);
+  rotate: 45deg;
+  flex: none;
+}
+
+h3::after {
+  content: '';
+  height: 1px;
+  background: color-mix(in oklch, var(--fg), transparent 90%);
+  flex: 1 1 16px;
 }
 
 h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-weight: 700; }
