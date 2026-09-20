@@ -2,7 +2,7 @@ name = "jobfill-dex"
 main = "worker.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = true
+workers_dev = false
 
 [vars]
 DEX_THRESHOLD = "5"

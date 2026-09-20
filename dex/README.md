@@ -97,7 +97,7 @@ costs nothing and breaks nothing.
 **The custom domain is attached once, by hand**, rather than declared here. In the
 dashboard: **Workers & Pages -> jobfill-dex -> Settings -> Domains & Routes -> Add ->
 Custom domain -> `dex.jobfill.app`**. Cloudflare creates the DNS record and the
-certificate itself.
+certificate itself. `workers_dev` is off, so that domain is the only way in.
 
 Keeping it out of `wrangler.toml` is deliberate. A route declared in config has to be
 re-asserted on every deploy, which means the token this repository holds would need
