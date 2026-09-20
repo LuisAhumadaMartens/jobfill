@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { dashboard } from './dashboard.ts';
 import { RateLimit } from './limit.ts';
-import { validateReport } from '../src/shared/questions.ts';
+import { validateReport } from '../src/shared/dex.ts';
 import type { Store } from './store.ts';
 
 const MAX_BODY = 256 * 1024;
@@ -103,11 +103,11 @@ export function routes({ store, threshold, perMinute }: Options) {
       return { accepted: checked.value.observations.length, stored, threshold };
     })
 
-    .get('/v1/questions', () => view())
+    .get('/v1/dex', () => view())
 
-    .get('/v1/questions.csv', async ({ set }) => {
+    .get('/v1/dex.csv', async ({ set }) => {
       set.headers['content-type'] = 'text/csv; charset=utf-8';
-      set.headers['content-disposition'] = 'attachment; filename="jobfill-questions.csv"';
+      set.headers['content-disposition'] = 'attachment; filename="jobfill-dex.csv"';
       return csv(await store.published(threshold));
     })
 

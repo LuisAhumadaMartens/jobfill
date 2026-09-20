@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   REPORT_SCHEMA, isCollectable, holdsPersonalData, isProtectedQuestion,
   validateObservation, validateReport, type Observation, type Report
-} from '../src/shared/questions.ts';
+} from '../src/shared/dex.ts';
 
 function observation(over: Partial<Observation> = {}): Observation {
   return {

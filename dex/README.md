@@ -1,4 +1,4 @@
-# JobFill Questions
+# JobFill Dex
 
 An open record of how applicant tracking systems word their application questions, and
 the service that collects it.
@@ -12,7 +12,7 @@ typed into it is theirs and never leaves their browser.
 
 ```bash
 bun install
-bun run questions      # http://localhost:3100
+bun run dex      # http://localhost:3100
 ```
 
 That is the whole setup. Locally it runs on Bun over a SQLite file created on first write,
@@ -23,36 +23,36 @@ on a Cloudflare Worker over D1, which is SQLite as well, so the queries in
 To run it the way production does, against a local D1:
 
 ```bash
-bun run questions:dev  # wrangler dev, D1 in miniflare
+bun run dex:dev  # wrangler dev, D1 in miniflare
 ```
 
 For a local run you usually want to see rows straight away, which the publication gate
 would otherwise hold back:
 
 ```bash
-QUESTIONS_THRESHOLD=1 bun run questions
+DEX_THRESHOLD=1 bun run dex
 ```
 
 | Variable | Default | What it does |
 |---|---|---|
 | `PORT` | `3100` | Port to listen on |
-| `QUESTIONS_DB` | `questions.sqlite` | Where the database file lives |
-| `QUESTIONS_THRESHOLD` | `5` | Separate reports a question needs before it is published |
-| `QUESTIONS_RATE` | `30` | Reports accepted per minute per caller |
+| `DEX_DB` | `dex.sqlite` | Where the database file lives |
+| `DEX_THRESHOLD` | `5` | Separate reports a question needs before it is published |
+| `DEX_RATE` | `30` | Reports accepted per minute per caller |
 
 ## Endpoints
 
 | | |
 |---|---|
 | `POST /v1/reports` | Ingest. The only write path. |
-| `GET /v1/questions` | The published dataset as JSON |
-| `GET /v1/questions.csv` | The same rows as a spreadsheet |
+| `GET /v1/dex` | The published dataset as JSON |
+| `GET /v1/dex.csv` | The same rows as a spreadsheet |
 | `GET /healthz` | Liveness, plus the limits in force |
 | `GET /` | The dashboard |
 
 ## What stops bad data getting in
 
-The client and the server share one validator, [`src/shared/questions.ts`](../src/shared/questions.ts),
+The client and the server share one validator, [`src/shared/dex.ts`](../src/shared/dex.ts),
 so there is one definition of what a report may contain and it cannot drift between the two.
 The server runs it again on arrival rather than trusting the extension that sent it, because
 the promise is the server's to keep.
@@ -75,18 +75,18 @@ A report carries a random token that is made fresh for that one send and stored 
 exists so the server can count *separate* reports rather than separate people, and so one
 sender cannot inflate that count by sending twice.
 
-On top of that, a question is held back until **`QUESTIONS_THRESHOLD` separate reports** have
+On top of that, a question is held back until **`DEX_THRESHOLD` separate reports** have
 seen it. A question a company wrote for one candidate never reaches five, so it never
 reaches the page. The dashboard shows how many are being held, because that number is
 evidence the gate is doing something.
 
 ## Deploy
 
-Pushing to `main` deploys it, through [`.github/workflows/questions.yml`](../.github/workflows/questions.yml),
+Pushing to `main` deploys it, through [`.github/workflows/dex.yml`](../.github/workflows/dex.yml),
 which applies the schema and then runs `wrangler deploy`. By hand it is:
 
 ```bash
-bun run questions:deploy
+bun run dex:deploy
 ```
 
 It runs on Cloudflare Workers with D1. Both free plans are far larger than this needs: 100k
@@ -95,8 +95,8 @@ per application. Nothing sleeps and nothing is deleted for being idle, so a quie
 costs nothing and breaks nothing.
 
 **The custom domain is attached once, by hand**, rather than declared here. In the
-dashboard: **Workers & Pages -> jobfill-questions -> Settings -> Domains & Routes -> Add ->
-Custom domain -> `questions.jobfill.app`**. Cloudflare creates the DNS record and the
+dashboard: **Workers & Pages -> jobfill-dex -> Settings -> Domains & Routes -> Add ->
+Custom domain -> `dex.jobfill.app`**. Cloudflare creates the DNS record and the
 certificate itself.
 
 Keeping it out of `wrangler.toml` is deliberate. A route declared in config has to be

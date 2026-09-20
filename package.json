@@ -11,9 +11,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "zip": "bun run scripts/build.ts --zip",
-    "questions": "bun run questions/server.ts",
-    "questions:dev": "bunx wrangler dev --config questions/wrangler.toml",
-    "questions:deploy": "bunx wrangler deploy --config questions/wrangler.toml"
+    "dex:dev": "bunx wrangler dev --config dex/wrangler.toml",
+    "dex:deploy": "bunx wrangler deploy --config dex/wrangler.toml",
+    "dex": "bun run dex/server.ts"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.5",

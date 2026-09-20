@@ -1,5 +1,14 @@
 const WINDOW_MS = 60_000;
 
+export function digest(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export interface Bucket {
   count: number;
   resetAt: number;
@@ -7,12 +16,13 @@ export interface Bucket {
 
 export class RateLimit {
   private readonly buckets = new Map<string, Bucket>();
-  private readonly salt = crypto.randomUUID();
+  private salt: string | null = null;
 
   constructor(private readonly perMinute: number) {}
 
   private key(address: string): string {
-    return Bun.hash(this.salt + address).toString(36);
+    this.salt ??= crypto.randomUUID();
+    return digest(this.salt + address);
   }
 
   take(address: string, now = Date.now()): boolean {

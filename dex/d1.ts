@@ -1,6 +1,6 @@
 import { BOARDS, COUNTS, GATED, GROUPS, INSERT, PUBLISHED, bindingsFor, withOptions } from './store.ts';
 import type { QuestionRow, Board, Store, Totals } from './store.ts';
-import type { Report } from '../src/shared/questions.ts';
+import type { Report } from '../src/shared/dex.ts';
 
 interface D1Result<T = unknown> {
   results: T[];

@@ -1,18 +1,18 @@
-name: Questions
+name: Dex
 
 on:
   push:
     branches: [main]
     paths:
-      - 'questions/**'
-      - 'src/shared/questions.ts'
-      - '.github/workflows/questions.yml'
+      - 'dex/**'
+      - 'src/shared/dex.ts'
+      - '.github/workflows/dex.yml'
   schedule:
     - cron: '17 5 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: questions
+  group: dex
   cancel-in-progress: false
 
 jobs:
@@ -33,13 +33,13 @@ jobs:
 
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun test tests/questions.test.ts tests/questions-d1.test.ts tests/questions-server.test.ts
+      - run: bun test tests/dex.test.ts tests/dex-d1.test.ts tests/dex-server.test.ts
 
       - name: Apply the schema
-        run: bunx wrangler d1 execute jobfill-questions --remote --yes --file=questions/schema.sql --config questions/wrangler.toml
+        run: bunx wrangler d1 execute jobfill-dex --remote --yes --file=dex/schema.sql --config dex/wrangler.toml
 
       - name: Deploy the worker
-        run: bunx wrangler deploy --config questions/wrangler.toml
+        run: bunx wrangler deploy --config dex/wrangler.toml
 
   export:
     if: github.event_name != 'push'
@@ -52,8 +52,8 @@ jobs:
       - name: Take a copy of what is published
         run: |
           mkdir -p data
-          curl -sfS --max-time 60 https://questions.jobfill.app/v1/questions | python3 -m json.tool > data/lexicon.json
-          curl -sfS --max-time 60 https://questions.jobfill.app/v1/questions.csv > data/lexicon.csv
+          curl -sfS --max-time 60 https://dex.jobfill.app/v1/dex | python3 -m json.tool > data/lexicon.json
+          curl -sfS --max-time 60 https://dex.jobfill.app/v1/dex.csv > data/lexicon.csv
 
       - name: Commit it if it changed
         run: |

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BOARDS, COUNTS, GATED, GROUPS, INSERT, PUBLISHED, bindingsFor, withOptions } from './store.ts';
 import type { QuestionRow, Board, Store, Totals } from './store.ts';
-import type { Report } from '../src/shared/questions.ts';
+import type { Report } from '../src/shared/dex.ts';
 
 export class SqliteStore implements Store {
   private readonly db: Database;

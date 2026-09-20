@@ -99,13 +99,13 @@ export function dashboard(view: View): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>JobFill Questions</title>
+<title>JobFill Dex</title>
 <meta name="description" content="An open map of how applicant tracking systems word their application questions." />
 <style>${STYLE}</style>
 </head>
 <body>
 <main>
-  <h1>JobFill Questions</h1>
+  <h1>JobFill Dex</h1>
   <p class="lede">
     An open map of how applicant tracking systems word their application questions. Every
     row here is text that any applicant opening that form already sees. Nobody's answers
@@ -145,7 +145,7 @@ export function dashboard(view: View): string {
     : `<p class="empty">Nothing has reached ${view.threshold} reports yet. That is the gate working, not an error.</p>`}
 
   <footer>
-    Take the data: <a href="/v1/questions">/v1/questions</a> as JSON, <a href="/v1/questions.csv">/v1/questions.csv</a> as a spreadsheet.
+    Take the data: <a href="/v1/dex">/v1/dex</a> as JSON, <a href="/v1/dex.csv">/v1/dex.csv</a> as a spreadsheet.
     Both are the same k-gated view this page shows.
   </footer>
 </main>

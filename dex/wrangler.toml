@@ -1,17 +1,17 @@
-name = "jobfill-questions"
+name = "jobfill-dex"
 main = "worker.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [vars]
-QUESTIONS_THRESHOLD = "5"
-QUESTIONS_RATE = "30"
+DEX_THRESHOLD = "5"
+DEX_RATE = "30"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "jobfill-questions"
-database_id = "PENDING_RUN_WRANGLER_D1_CREATE"
+database_name = "jobfill-dex"
+database_id = "c6ff968f-e6c9-4192-8013-1d7a48b3f3be"
 
 [observability]
 enabled = true

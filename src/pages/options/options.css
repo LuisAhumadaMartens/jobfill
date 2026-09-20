@@ -393,5 +393,5 @@ h4.sub { font-size: 12.5px; color: var(--fg-muted); margin: 20px 0 9px; font-wei
 .pact-side.deny h4 { color: var(--fg-faint); }
 .pact-side ul { margin: 0; padding-left: 17px; color: var(--fg-muted); font-size: 13px; line-height: 1.7; }
 
-.questions-q { font-weight: 700; font-size: 13.5px; }
-.questions-opts { color: var(--fg-faint); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }
+.dex-q { font-weight: 700; font-size: 13.5px; }
+.dex-opts { color: var(--fg-faint); font-size: 12px; margin-top: 5px; overflow-wrap: anywhere; }

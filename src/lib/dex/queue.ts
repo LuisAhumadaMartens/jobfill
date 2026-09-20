@@ -1,8 +1,8 @@
 import { area } from '../answers/storage.ts';
-import { LIMITS, type Observation } from '../../shared/questions.ts';
+import { LIMITS, type Observation } from '../../shared/dex.ts';
 
-const KEY = 'questionQueue';
-const CONSENT = 'questionConsent';
+const KEY = 'dexQueue';
+const CONSENT = 'dexConsent';
 
 export const QUEUE_CAP = 200;
 

@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { unlinkSync } from 'node:fs';
-import { SqliteStore } from '../questions/sqlite.ts';
-import { questionKey } from '../questions/store.ts';
-import type { QuestionRow } from '../questions/store.ts';
-import { RateLimit } from '../questions/limit.ts';
-import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/questions.ts';
+import { SqliteStore } from '../dex/sqlite.ts';
+import { questionKey } from '../dex/store.ts';
+import type { QuestionRow } from '../dex/store.ts';
+import { RateLimit } from '../dex/limit.ts';
+import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/dex.ts';
 
-const DB = `/tmp/questions-test-${crypto.randomUUID()}.sqlite`;
+const DB = `/tmp/dex-test-${crypto.randomUUID()}.sqlite`;
 let store: SqliteStore;
 
 function observation(over: Partial<Observation> = {}): Observation {
@@ -75,10 +75,10 @@ describe('the ingest endpoint', () => {
   let app: { handle: (request: Request) => Promise<Response> };
 
   beforeAll(async () => {
-    Bun.env.QUESTIONS_DB = `/tmp/questions-http-${crypto.randomUUID()}.sqlite`;
-    Bun.env.QUESTIONS_THRESHOLD = '2';
-    Bun.env.QUESTIONS_RATE = '500';
-    app = (await import('../questions/server.ts')).app;
+    Bun.env.DEX_DB = `/tmp/dex-http-${crypto.randomUUID()}.sqlite`;
+    Bun.env.DEX_THRESHOLD = '2';
+    Bun.env.DEX_RATE = '500';
+    app = (await import('../dex/server.ts')).app;
   });
 
   const post = (body: unknown, raw?: string) => app.handle(new Request('http://questions.test/v1/reports', {
@@ -117,7 +117,7 @@ describe('the ingest endpoint', () => {
     const token = session();
     await post(report(token, [observation({ question: 'Which timezone do you work from?' })]));
 
-    const body = await (await get('/v1/questions')).text();
+    const body = await (await get('/v1/dex')).text();
     expect(body).not.toContain(token);
     expect(/[0-9a-f]{32}/.test(body)).toBe(false);
     expect(JSON.parse(body).totals.sessions).toBeGreaterThan(0);
@@ -128,7 +128,7 @@ describe('the ingest endpoint', () => {
     const token = session();
     await post(report(token, [observation({ question: 'Which timezone do you work from?' })]));
 
-    const response = await get('/v1/questions.csv');
+    const response = await get('/v1/dex.csv');
     expect(response.headers.get('content-type')).toContain('text/csv');
 
     const body = await response.text();
@@ -139,7 +139,7 @@ describe('the ingest endpoint', () => {
 
   test('the dashboard renders and says what is never collected', async () => {
     const page = await (await get('/')).text();
-    expect(page).toContain('JobFill Questions');
+    expect(page).toContain('JobFill Dex');
     expect(page).toContain('Never collected');
   });
 });

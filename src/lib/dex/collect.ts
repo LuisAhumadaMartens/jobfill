@@ -1,5 +1,5 @@
 import { atsFor } from '../sites.ts';
-import { isCollectable, type QuestionControl, type QuestionOutcome, type Observation } from '../../shared/questions.ts';
+import { isCollectable, type QuestionControl, type QuestionOutcome, type Observation } from '../../shared/dex.ts';
 import type { ControlKind, FieldPlan, Profile } from '../../shared/types.ts';
 
 const OUTCOMES: Partial<Record<FieldPlan['status'], QuestionOutcome>> = {

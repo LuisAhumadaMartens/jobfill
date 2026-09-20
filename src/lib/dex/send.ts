@@ -1,8 +1,8 @@
-import { REPORT_SCHEMA, LIMITS, type Observation, type Report } from '../../shared/questions.ts';
+import { REPORT_SCHEMA, LIMITS, type Observation, type Report } from '../../shared/dex.ts';
 import { batches, readConsent, readQueue, writeConsent, writeQueue } from './queue.ts';
 
-export const QUESTIONS_ORIGIN = 'https://questions.jobfill.app';
-export const QUESTIONS_DEV_ORIGIN = 'http://localhost:3100';
+export const DEX_ORIGIN = 'https://dex.jobfill.app';
+export const DEX_DEV_ORIGIN = 'http://localhost:3100';
 
 export interface SendResult {
   sent: number;

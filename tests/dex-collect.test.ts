@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { observationsFor, ownValues } from '../src/lib/questions/collect.ts';
-import { batches, merge, QUEUE_CAP } from '../src/lib/questions/queue.ts';
+import { observationsFor, ownValues } from '../src/lib/dex/collect.ts';
+import { batches, merge, QUEUE_CAP } from '../src/lib/dex/queue.ts';
 import type { FieldPlan, SerializedField } from '../src/shared/types.ts';
-import type { Observation } from '../src/shared/questions.ts';
+import type { Observation } from '../src/shared/dex.ts';
 
 const PROFILE = { firstName: 'Luis', lastName: 'Ahumada', email: 'luis@weareinit.org', city: 'San Francisco', phone: '+14155550123' };
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { D1Store, type D1Database } from '../questions/d1.ts';
-import { questionKey } from '../questions/store.ts';
-import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/questions.ts';
+import { D1Store, type D1Database } from '../dex/d1.ts';
+import { questionKey } from '../dex/store.ts';
+import { REPORT_SCHEMA, type Observation, type Report } from '../src/shared/dex.ts';
 
 interface Call {
   query: string;
@@ -101,5 +101,67 @@ describe('the D1 store', () => {
     const { db } = fakeD1({ first: undefined });
     const totals = await new D1Store(db).totals(5);
     expect(totals).toEqual({ observations: 0, boards: 0, sessions: 0, published: 0, held: 0 });
+  });
+});
+
+describe('what the Worker is allowed to depend on', () => {
+  const WORKER_GRAPH = ['worker.ts', 'routes.ts', 'd1.ts', 'store.ts', 'limit.ts', 'dashboard.ts'];
+
+  test('nothing the Worker loads reaches for a Bun global', async () => {
+    for (const name of WORKER_GRAPH) {
+      const source = await Bun.file(`dex/${name}`).text();
+      expect({ name, usesBun: /\bBun\./.test(source) }).toEqual({ name, usesBun: false });
+    }
+  });
+
+  test('nothing the Worker loads imports a Bun or Node built-in', async () => {
+    for (const name of WORKER_GRAPH) {
+      const source = await Bun.file(`dex/${name}`).text();
+      expect({ name, imports: /from '(bun:|node:)/.test(source) }).toEqual({ name, imports: false });
+    }
+  });
+
+  test('the shared validator is runtime agnostic too', async () => {
+    const source = await Bun.file('src/shared/dex.ts').text();
+    expect(/\bBun\.|from '(bun:|node:)/.test(source)).toBe(false);
+  });
+});
+
+describe('how the Worker is put together', () => {
+  test('the app is built at module scope, not inside a request', async () => {
+    const source = await Bun.file('dex/worker.ts').text();
+    expect(source).toContain('export default new Elysia');
+    expect(source).not.toContain('async fetch(');
+  });
+
+  test('the app is compiled, which Workers only permit during startup', async () => {
+    const source = await Bun.file('dex/worker.ts').text();
+    expect(source).toContain('.compile()');
+  });
+});
+
+describe('what may happen while the Worker is starting up', () => {
+  test('the limiter makes no randomness until a request actually uses it', async () => {
+    const { RateLimit } = await import('../dex/limit.ts');
+    const original = crypto.randomUUID.bind(crypto);
+    let calls = 0;
+
+    Object.defineProperty(crypto, 'randomUUID', {
+      configurable: true,
+      value: () => { calls += 1; return original(); }
+    });
+
+    try {
+      const limit = new RateLimit(5);
+      expect(calls).toBe(0);
+
+      limit.take('1.2.3.4');
+      expect(calls).toBe(1);
+
+      limit.take('5.6.7.8');
+      expect(calls).toBe(1);
+    } finally {
+      Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: original });
+    }
   });
 });

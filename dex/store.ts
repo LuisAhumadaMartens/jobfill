@@ -1,4 +1,4 @@
-import type { Report } from '../src/shared/questions.ts';
+import type { Report } from '../src/shared/dex.ts';
 
 export interface QuestionRow {
   ats: string;
