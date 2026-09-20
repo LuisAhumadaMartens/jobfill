@@ -222,3 +222,36 @@ describe('staying out of search results', () => {
     }
   });
 });
+
+describe('what the edge is allowed to keep', () => {
+  let app: { handle: (request: Request) => Promise<Response> };
+
+  beforeAll(async () => {
+    app = (await import('../dex/routes.ts')).routes({
+      store: new SqliteStore(`/tmp/dex-cache-${crypto.randomUUID()}.sqlite`),
+      threshold: 5,
+      perMinute: 100
+    }) as unknown as typeof app;
+  });
+
+  test('the readable pages may be held at the edge, which is what keeps them off the Worker', async () => {
+    for (const path of ['/', '/v1/dex', '/v1/dex.csv']) {
+      const header = (await app.handle(new Request(`http://dex.test${path}`))).headers.get('cache-control');
+      expect({ path, header }).toEqual({ path, header: 'public, max-age=300, s-maxage=300' });
+    }
+  });
+
+  test('ingest is never cached, however it is called', async () => {
+    const response = await app.handle(new Request('http://dex.test/v1/reports', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'not json'
+    }));
+    expect(response.headers.get('cache-control')).toBe('no-store');
+  });
+
+  test('health is never cached, because a cached health check answers nothing', async () => {
+    const response = await app.handle(new Request('http://dex.test/healthz'));
+    expect(response.headers.get('cache-control')).toBe('no-store');
+  });
+});

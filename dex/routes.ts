@@ -5,6 +5,8 @@ import { validateReport } from '../src/shared/dex.ts';
 import type { Store } from './store.ts';
 
 const MAX_BODY = 256 * 1024;
+const EDGE_SECONDS = 300;
+const PUBLIC = `public, max-age=${EDGE_SECONDS}, s-maxage=${EDGE_SECONDS}`;
 
 export interface Options {
   store: Store;
@@ -56,6 +58,7 @@ export function routes({ store, threshold, perMinute }: Options) {
       set.headers['x-content-type-options'] = 'nosniff';
       set.headers['referrer-policy'] = 'no-referrer';
       set.headers['x-robots-tag'] = 'noindex, nofollow';
+      set.headers['cache-control'] ??= 'no-store';
     })
 
     .options('/v1/reports', ({ set, request }) => {
@@ -104,15 +107,20 @@ export function routes({ store, threshold, perMinute }: Options) {
       return { accepted: checked.value.observations.length, stored, threshold };
     })
 
-    .get('/v1/dex', () => view())
+    .get('/v1/dex', ({ set }) => {
+      set.headers['cache-control'] = PUBLIC;
+      return view();
+    })
 
     .get('/v1/dex.csv', async ({ set }) => {
+      set.headers['cache-control'] = PUBLIC;
       set.headers['content-type'] = 'text/csv; charset=utf-8';
       set.headers['content-disposition'] = 'attachment; filename="jobfill-dex.csv"';
       return csv(await store.published(threshold));
     })
 
     .get('/robots.txt', ({ set }) => {
+      set.headers['cache-control'] = 'public, max-age=86400';
       set.headers['content-type'] = 'text/plain; charset=utf-8';
       return 'User-agent: *\nDisallow: /\n';
     })
@@ -120,6 +128,7 @@ export function routes({ store, threshold, perMinute }: Options) {
     .get('/healthz', () => ({ ok: true, threshold }))
 
     .get('/', async ({ set }) => {
+      set.headers['cache-control'] = PUBLIC;
       set.headers['content-type'] = 'text/html; charset=utf-8';
       return dashboard(await view());
     });
