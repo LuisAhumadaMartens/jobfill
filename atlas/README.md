@@ -96,7 +96,8 @@ costs nothing and breaks nothing.
 
 `wrangler` is deliberately not a dependency of this repository. Anyone working on the
 extension should not have to download it, so the two commands above reach for it with
-`bunx` instead.
+`bunx` instead. It does want **Node 22 or newer**, which is the one thing about it that is
+not optional; `bunx` will fetch wrangler happily and then wrangler will refuse to start.
 
 ## Keeping the data
 
